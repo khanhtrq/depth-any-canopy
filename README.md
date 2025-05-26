@@ -50,13 +50,16 @@ This project is licensed under the **Apache 2.0 license**. See [LICENSE](LICENSE
 If you find this project useful, please consider citing:
 
 ```bibtex
-@misc{cambrin2024depthcanopyleveragingdepth,
-      title={Depth Any Canopy: Leveraging Depth Foundation Models for Canopy Height Estimation}, 
-      author={Daniele Rege Cambrin and Isaac Corley and Paolo Garza},
-      year={2024},
-      eprint={2408.04523},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2408.04523}, 
+@inbook{RegeCambrin2025,
+  title = {Depth Any Canopy: Leveraging Depth Foundation Models for Canopy Height Estimation},
+  ISBN = {9783031923876},
+  ISSN = {1611-3349},
+  url = {http://dx.doi.org/10.1007/978-3-031-92387-6_5},
+  DOI = {10.1007/978-3-031-92387-6_5},
+  booktitle = {Computer Vision – ECCV 2024 Workshops},
+  publisher = {Springer Nature Switzerland},
+  author = {Rege Cambrin,  Daniele and Corley,  Isaac and Garza,  Paolo},
+  year = {2025},
+  pages = {71–86}
 }
 ```
