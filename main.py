@@ -4,7 +4,7 @@ import comet_ml
 import hydra
 import lightning as pl
 import torch
-from dataset import EarthViewNEONDatamodule
+from dataset import EarthViewNEONDatamodule, DummyDatamodule
 from lightning.pytorch.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
@@ -19,8 +19,10 @@ from omegaconf import DictConfig
 def main(args: DictConfig):
     pl.seed_everything(42)
     torch.set_float32_matmul_precision("medium")
-
+    
+    print("Starting")
     data_module = EarthViewNEONDatamodule(**args.dataset)
+    data_module = DummyDatamodule(num_samples = 5)
     model = DepthAnythingV2Module(**args.model)
 
     experiment_id = time.strftime("%Y%m%d-%H%M%S")
@@ -60,8 +62,10 @@ def main(args: DictConfig):
         log_every_n_steps=50,
         precision="32-true" if args.model.encoder == "vitl" else "32-true",
         limit_val_batches=50,
-        val_check_interval=500,
+        val_check_interval=50,
     )
+
+    print("Fitting to trainer")
 
     trainer.fit(model, datamodule=data_module)
 
