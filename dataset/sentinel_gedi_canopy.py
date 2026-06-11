@@ -70,9 +70,8 @@ class GediSentinelDataset(Dataset):
         gedi = np.load(gedi_path)
         sentinel = np.load(sentinel_path)
 
-        print(gedi.shape, sentinel.shape)
-
-        print(gedi.dtype, sentinel.dtype)
+        # print(gedi.shape, sentinel.shape)
+        # print(gedi.dtype, sentinel.dtype)
 
         #band 2, 3, 4, RGB?
         # band 2, 3, 4 (RGB)
