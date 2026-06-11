@@ -94,7 +94,7 @@ class GediSentinelDataset(Dataset):
         ])
 
         sentinel = transpose_sentinel(sentinel)
-        gedi = transpose_gedi(gedi)
+        gedi = torch.from_numpy(gedi)
 
         print(sentinel.shape, gedi.shape)
         print(sentinel.dtype, gedi.dtype)
