@@ -7,8 +7,6 @@ import os
 
 import matplotlib.pyplot as plt
 
-
-
 gedi_folder = "/kaggle/input/gedi-canopy-height-hoanglien/GEDI_filtered/GEDI_filtered"
 sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel-12band/Sentinel-12band"
 regions = ["CucPhuong", "BaBe"]
