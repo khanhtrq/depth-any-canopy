@@ -111,7 +111,6 @@ class GediSentinelDataset(Dataset):
         return fig
 
 
-
 class GediSentinelDataModule(L.LightningDataModule):
     def __init__(
         self,

@@ -4,7 +4,7 @@ import comet_ml
 import hydra
 import lightning as pl
 import torch
-from dataset import EarthViewNEONDatamodule, DummyDatamodule
+from dataset import EarthViewNEONDatamodule, DummyDatamodule, GediSentinelDataModule
 from lightning.pytorch.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
@@ -22,7 +22,7 @@ def main(args: DictConfig):
     
     print("Starting")
     data_module = EarthViewNEONDatamodule(**args.dataset)
-    data_module = DummyDatamodule(num_samples = 5)
+    data_module = GediSentinelDataModule()
     model = DepthAnythingV2Module(**args.model)
 
     experiment_id = time.strftime("%Y%m%d-%H%M%S")
