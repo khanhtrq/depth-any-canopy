@@ -75,6 +75,7 @@ class GediSentinelDataset(Dataset):
         
         gedi = gedi.astype(np.float32)
         sentinel = sentinel.astype(np.float32)
+        sentinel = sentinel.transpose(1, 2, 0)  # from CHW to HWC for PyTorch
 
         print(gedi.shape, sentinel.shape)
 
