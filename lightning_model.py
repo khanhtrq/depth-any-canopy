@@ -110,6 +110,8 @@ class DepthAnythingV2Module(LightningModule):
         img, depth = self._preprocess_batch(batch)
 
         pred = self.model(img).predicted_depth
+        print("depth.shape[-2:]", depth.shape[-2:])
+        print("pred.shape", pred.shape)
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
