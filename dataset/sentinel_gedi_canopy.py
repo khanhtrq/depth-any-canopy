@@ -76,6 +76,8 @@ class GediSentinelDataset(Dataset):
         gedi = gedi.astype(np.float32)
         sentinel = sentinel.astype(np.float32)
 
+        print(gedi.shape, sentinel.shape)
+
 
         transpose_sentinel = T.Compose([
                 T.ToTensor(),
