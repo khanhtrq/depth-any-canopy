@@ -114,7 +114,10 @@ class DepthAnythingV2Module(LightningModule):
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
         loss = self.loss(pred, depth)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss,
+                 prog_bar=True,   # show in progress bar
+                on_step=True,
+                on_epoch=True,)
         return loss
 
     def validation_step(self, batch, batch_idx):
