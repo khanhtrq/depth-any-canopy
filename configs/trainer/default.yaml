@@ -1,2 +1,3 @@
-devices: [0]
+devices: "auto"
+accelerator: "auto"
 max_epochs: 2
