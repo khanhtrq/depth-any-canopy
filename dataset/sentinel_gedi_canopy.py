@@ -75,7 +75,14 @@ class GediSentinelDataset(Dataset):
         print(gedi.dtype, sentinel.dtype)
 
         #band 2, 3, 4, RGB?
-        sample = {"image": sentinel[1:4], "mask": gedi}
+        # band 2, 3, 4 (RGB)
+        sentinel = torch.from_numpy(sentinel[1:4]).float()
+        gedi = torch.from_numpy(gedi).float()
+
+        sample = {
+            "image": sentinel,
+            "mask": gedi,
+        }
 
         return sample
 
