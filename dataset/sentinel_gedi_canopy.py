@@ -7,6 +7,9 @@ import os
 
 import matplotlib.pyplot as plt
 
+import torchvision.transforms as T
+
+
 gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered/GEDI_filtered"
 sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel-12band/Sentinel-12band"
 regions = ["CucPhuong", "BaBe"]
@@ -69,17 +72,32 @@ class GediSentinelDataset(Dataset):
 
         gedi = np.load(gedi_path)
         sentinel = np.load(sentinel_path)
+        
+        gedi = gedi.astype(np.float32)
+        rgb = rgb.astype(np.float32)
 
-        # print(gedi.shape, sentinel.shape)
-        # print(gedi.dtype, sentinel.dtype)
 
-        #band 2, 3, 4, RGB?
-        # band 2, 3, 4 (RGB)
-        sentinel = torch.from_numpy(sentinel[1:4]).float()
-        gedi = torch.from_numpy(gedi).float()
+        transpose_sentinel = T.Compose([
+                T.ToTensor(),
+                # 12 bands
+                # statistics on Cuc Phuong and Ba Be
+                # ------------
+                T.Normalize(mean=[1445.2507821473719, 1494.0496883470857, 1695.0355912679454, 1564.6835706583588, 2027.4767477712417, 3214.2947198416723, 3624.9778571404872, 3675.896774446667, 3823.0191113997635, 3810.2311611275345, 2921.714671898899, 2096.318336982956],
+                            std=[213.97085480597985, 236.57899563433898, 264.3780942144651, 334.3297911214344, 332.1163963382028, 504.0289211352316, 630.1565564561154, 696.8590235637502, 698.3457937838511, 635.1889167644749, 583.1581743442069, 504.8285260785615]
+                )
+            ])
+        transpose_gedi = T.Compose([
+            T.ToTensor()
+        ])
+
+        sentinel = transpose_sentinel(sentinel)
+        gedi = transpose_gedi(gedi)
+
+        print(sentinel.shape, gedi.shape)
+        print(sentinel.dtype, gedi.dtype)
 
         sample = {
-            "image": sentinel,
+            "image": sentinel[1:4, :, :],  # using RGB bands only
             "mask": gedi,
         }
 
