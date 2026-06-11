@@ -72,6 +72,8 @@ class GediSentinelDataset(Dataset):
 
         print(gedi.shape, sentinel.shape)
 
+        print(gedi.dtype, sentinel.dtype)
+
         #band 2, 3, 4, RGB?
         sample = {"image": sentinel[1:4], "mask": gedi}
 
