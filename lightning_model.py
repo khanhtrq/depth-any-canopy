@@ -139,7 +139,15 @@ class DepthAnythingV2Module(LightningModule):
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
-        loss = self.loss(pred, depth)
+        valid_mask = ~torch.isnan(depth)
+        num_valid = valid_mask.sum().item()
+        # self.print(f"Valid pixels: {num_valid}")
+
+        loss = self.loss(
+            pred[valid_mask],
+            depth[valid_mask]
+        )
+
         self.log("val_loss", loss)
         self.metric(pred, depth)
         self.log_dict(self.metric)
@@ -163,7 +171,11 @@ class DepthAnythingV2Module(LightningModule):
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
-        self.metric(pred, depth)
+        valid_mask = ~torch.isnan(depth)
+        num_valid = valid_mask.sum().item()
+        # self.print(f"Valid pixels: {num_valid}")
+
+        self.metric(pred[valid_mask], depth[valid_mask])
         self.log_dict(self.metric)
 
         self.classification_metrics(pred > 1e-4, depth > 1e-4)
