@@ -100,7 +100,7 @@ class GediSentinelDataset(Dataset):
         print(sentinel.dtype, gedi.dtype)
 
         print(sentinel.min(), sentinel.max())
-        print(gedi.min(), gedi.max())
+        print(gedi.nanmin(), gedi.nanmax())
 
         sample = {
             "image": sentinel[1:4, :, :],  # using RGB bands only
