@@ -113,6 +113,7 @@ class DepthAnythingV2Module(LightningModule):
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
+        print("Number of nan values in ground truth depth:", torch.isnan(depth).sum().item())
         loss = self.loss(pred, depth)
         self.log("train_loss", loss,
                  prog_bar=True,   # show in progress bar
