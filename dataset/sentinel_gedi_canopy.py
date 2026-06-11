@@ -72,7 +72,10 @@ class GediSentinelDataset(Dataset):
 
         print(gedi.shape, sentinel.shape)
 
-        return (gedi, sentinel)
+        #band 2, 3, 4, RGB?
+        sample = {"image": sentinel[1:4], "mask": gedi}
+
+        return sample
 
     def plot(self, image, mask, prediction=None, show_titles=True):
         if prediction is not None:
