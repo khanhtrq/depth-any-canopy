@@ -77,7 +77,7 @@ class GediSentinelDataset(Dataset):
         sentinel = sentinel.astype(np.float32)
         sentinel = sentinel.transpose(1, 2, 0)  # from CHW to HWC for PyTorch
 
-        print(gedi.shape, sentinel.shape)
+        # print(gedi.shape, sentinel.shape)
 
 
         transpose_sentinel = T.Compose([
@@ -96,11 +96,11 @@ class GediSentinelDataset(Dataset):
         sentinel = transpose_sentinel(sentinel)
         gedi = torch.from_numpy(gedi)
 
-        print(sentinel.shape, gedi.shape)
-        print(sentinel.dtype, gedi.dtype)
+        # print(sentinel.shape, gedi.shape)
+        # print(sentinel.dtype, gedi.dtype)
 
-        print("Sentinel", sentinel.min(), sentinel.max())
-        print("GEDI", gedi[~torch.isnan(gedi)].min(), gedi[~torch.isnan(gedi)].max())
+        # print("Sentinel", sentinel.min(), sentinel.max())
+        # print("GEDI", gedi[~torch.isnan(gedi)].min(), gedi[~torch.isnan(gedi)].max())
 
         sample = {
             "image": sentinel[1:4, :, :],  # using RGB bands only
