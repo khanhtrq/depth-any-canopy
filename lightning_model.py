@@ -110,13 +110,22 @@ class DepthAnythingV2Module(LightningModule):
         img, depth = self._preprocess_batch(batch)
 
         pred = self.model(img).predicted_depth
-        print("depth.shape[-2:]", depth.shape[-2:])
-        print("pred.shape", pred.shape)
+        # print("depth.shape[-2:]", depth.shape[-2:])
+        # print("pred.shape", pred.shape)
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
-        print("Number of nan values in ground truth depth:", torch.isnan(depth).sum().item())
-        loss = self.loss(pred, depth)
+        valid_mask = ~torch.isnan(depth)
+        num_valid = valid_mask.sum().item()
+        self.print(f"Valid pixels: {num_valid}")
+
+        loss = self.loss(
+            pred[valid_mask],
+            depth[valid_mask]
+        )
+
+        # loss = self.loss(pred, depth)
+
         self.log("train_loss", loss,
                  prog_bar=True,   # show in progress bar
                 on_step=True,
