@@ -62,7 +62,7 @@ def main(args: DictConfig):
         log_every_n_steps=50,
         precision="32-true" if args.model.encoder == "vitl" else "32-true",
         limit_val_batches=50,
-        val_check_interval=50,
+        val_check_interval=425,
     )
 
     print("Fitting to trainer")
