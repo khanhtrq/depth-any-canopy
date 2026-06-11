@@ -74,7 +74,7 @@ class GediSentinelDataset(Dataset):
         sentinel = np.load(sentinel_path)
         
         gedi = gedi.astype(np.float32)
-        rgb = rgb.astype(np.float32)
+        sentinel = sentinel.astype(np.float32)
 
 
         transpose_sentinel = T.Compose([
