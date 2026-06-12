@@ -216,6 +216,7 @@ class DepthAnythingV2Module(LightningModule):
 
         img = resize(img, (518, 518), interpolation="bilinear")
 
+        print("Max depth for normalization:", self.hparams.max_depth)
         depth = torch.clamp(
             depth, min=self.hparams.min_depth, max=self.hparams.max_depth
         )
