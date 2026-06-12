@@ -183,7 +183,7 @@ class DepthAnythingV2Module(LightningModule):
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
-        # self.print(f"Valid pixels: {num_valid}")
+        self.print(f"Valid pixels: {num_valid}")
 
         self.metric(pred[valid_mask], depth[valid_mask])
         self.log_dict(self.metric)
