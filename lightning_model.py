@@ -126,7 +126,7 @@ class DepthAnythingV2Module(LightningModule):
 
         # loss = self.loss(pred, depth)
 
-        print("Loss:", loss)
+        # print("Loss:", loss)
 
         self.log("train_loss", loss,
                  prog_bar=True,   # show in progress bar
