@@ -40,7 +40,8 @@ class DepthAnythingV2Module(LightningModule):
     }
 
     size_map = {
-        "vits": "depth-anything/Depth-Anything-V2-Small-hf",
+        # "vits": "depth-anything/Depth-Anything-V2-Small-hf",
+        "vits": "DarthReca/depth-any-canopy-base", 
         "vitb": "depth-anything/Depth-Anything-V2-Base-hf",
         "vitl": "depth-anything/Depth-Anything-V2-Large-hf",
         "vitg": None,
