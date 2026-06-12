@@ -70,6 +70,7 @@ class DepthAnythingV2Module(LightningModule):
                 strict=False,
             )
         else:
+            print("Loading model from Hugging Fac.")
             self.model = transformers.AutoModelForDepthEstimation.from_pretrained(
                 self.size_map[encoder], cache_dir="cache"
             ).train()
