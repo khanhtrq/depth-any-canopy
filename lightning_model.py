@@ -124,6 +124,11 @@ class DepthAnythingV2Module(LightningModule):
             depth[valid_mask]
         )
 
+        print("Prediction min, max, and mean", pred[valid_mask].min().item(), pred[valid_mask].max().item(), 
+              pred[valid_mask].mean().item())
+        print("Depth min, max, and mean", depth[valid_mask].min().item(), depth[valid_mask].max().item(), 
+              depth[valid_mask].mean().item())
+
         # loss = self.loss(pred, depth)
 
         # print("Loss:", loss)
