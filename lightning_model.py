@@ -157,10 +157,10 @@ class DepthAnythingV2Module(LightningModule):
             depth[valid_mask]
         )
 
-        self.log("val_loss", loss,
-                 prog_bar=True,   # show in progress bar
-                on_step=True,
-                on_epoch=True)
+        self.log("val_loss", loss)
+                #  prog_bar=True,   # show in progress bar
+                # on_step=True,
+                # on_epoch=True)
         self.metric(pred, depth)
         self.log_dict(self.metric)
 
