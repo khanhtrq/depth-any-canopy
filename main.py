@@ -9,6 +9,7 @@ from lightning.pytorch.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
     ModelCheckpoint,
+    TQDMProgressBar,
 )
 from lightning.pytorch.loggers import CometLogger
 from lightning_model import DepthAnythingV2Module
@@ -50,8 +51,9 @@ def main(args: DictConfig):
     )
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
+    progress_bar = TQDMProgressBar(refresh_rate=1)
 
-    callback = [checkpoint_callback, early_stopping]
+    callback = [checkpoint_callback, early_stopping, progress_bar]
     if logger:
         callback.append(lr_monitor)
 
@@ -63,6 +65,7 @@ def main(args: DictConfig):
         precision="32-true" if args.model.encoder == "vitl" else "32-true",
         limit_val_batches=50,
         val_check_interval=425,
+        enable_progress_bar=True,
     )
 
     print("Fitting to trainer")
