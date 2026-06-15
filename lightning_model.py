@@ -77,9 +77,25 @@ class DepthAnythingV2Module(LightningModule):
             ).train()
 
         self.loss = nn.MSELoss()
-        self.metric = MetricCollection(
-            [regression.MeanSquaredError(), regression.MeanAbsoluteError()]
+        
+        # Training metrics
+        self.train_metric = MetricCollection(
+            {
+                "MSE": regression.MeanSquaredError(),
+                "MAE": regression.MeanAbsoluteError(),
+            },
+            prefix="train_"
         )
+        
+        # Validation metrics
+        self.val_metric = MetricCollection(
+            {
+                "MSE": regression.MeanSquaredError(),
+                "MAE": regression.MeanAbsoluteError(),
+            },
+            prefix="val_"
+        )
+        
         self.classification_metrics = MetricCollection(
             [classification.JaccardIndex(task="binary")]
         )
@@ -112,38 +128,33 @@ class DepthAnythingV2Module(LightningModule):
         img, depth = self._preprocess_batch(batch)
 
         pred = self.model(img).predicted_depth
-        # print("depth.shape[-2:]", depth.shape[-2:])
-        # print("pred.shape", pred.shape)
-
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
-        # pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
-        # self.print(f"Valid pixels: {num_valid}")
 
         loss = self.loss(
             pred[valid_mask],
             depth[valid_mask]
         )
 
-        # print("Prediction min, max, and mean", pred[valid_mask].min().item(), pred[valid_mask].max().item(), 
-        #       pred[valid_mask].mean().item())
-        # print("Depth min, max, and mean", depth[valid_mask].min().item(), depth[valid_mask].max().item(), 
-        #       depth[valid_mask].mean().item())
-
-        # loss = self.loss(pred, depth)
-
-        # print("Loss:", loss)
-
-        # Log metrics for training
-        self.metric(pred[valid_mask], depth[valid_mask])
-        self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log_dict({f"train_{k}": v for k, v in self.metric.compute().items()}, on_step=False, on_epoch=True)
-        self.metric.reset()
+        # Compute and log training metrics with custom names
+        self.train_metric(pred[valid_mask], depth[valid_mask])
+        
+        # Log loss
+        self.log("train_Loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        
+        # Log metrics with RMSE
+        metrics = self.train_metric.compute()
+        self.log_dict(metrics, on_step=False, on_epoch=True, prog_bar=True)
+        
+        # Manually compute and log RMSE
+        rmse = torch.sqrt(metrics.get("train_MSE", torch.tensor(0.0)))
+        self.log("train_RMSE", rmse, on_step=False, on_epoch=True, prog_bar=True)
+        
+        self.train_metric.reset()
         
         return loss
-
 
     
     def validation_step(self, batch, batch_idx):
@@ -160,12 +171,21 @@ class DepthAnythingV2Module(LightningModule):
             depth[valid_mask]
         )
 
-        self.log("val_loss", loss, prog_bar=True)
+        # Compute and log validation metrics with custom names
+        self.val_metric(pred[valid_mask], depth[valid_mask])
         
-        # Log metrics for validation
-        self.metric(pred[valid_mask], depth[valid_mask])
-        self.log_dict({f"val_{k}": v for k, v in self.metric.compute().items()}, prog_bar=True)
-        self.metric.reset()
+        # Log loss
+        self.log("val_Loss", loss, prog_bar=True)
+        
+        # Log metrics
+        metrics = self.val_metric.compute()
+        self.log_dict(metrics, prog_bar=True)
+        
+        # Manually compute and log RMSE
+        rmse = torch.sqrt(metrics.get("val_MSE", torch.tensor(0.0)))
+        self.log("val_RMSE", rmse, prog_bar=True)
+        
+        self.val_metric.reset()
 
         if batch_idx < 10 and self.logger is not None:
             fig = self.trainer.datamodule.val_dataset.plot(
@@ -184,20 +204,20 @@ class DepthAnythingV2Module(LightningModule):
         pred = self.model(img).predicted_depth
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
-        # pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
         self.print(f"Valid pixels: {num_valid}")
 
-        self.metric(pred[valid_mask], depth[valid_mask])
-        self.log_dict(self.metric)
+        self.val_metric(pred[valid_mask], depth[valid_mask])
+        metrics = self.val_metric.compute()
+        self.log_dict(metrics)
+        
+        rmse = torch.sqrt(metrics.get("val_MSE", torch.tensor(0.0)))
+        self.log("val_RMSE", rmse)
 
         self.classification_metrics(pred > 1e-4, depth > 1e-4)
         self.log_dict(self.classification_metrics)
-
-        # self.corr(pred[depth > 1e-4].flatten(), depth[depth > 1e-4].flatten())
-        # self.log_dict(self.corr)
 
         self.predictions.append(
             {
@@ -220,9 +240,6 @@ class DepthAnythingV2Module(LightningModule):
 
         img = resize(img, (518, 518), interpolation="bilinear")
         
-        # print("Max depth for normalization:", self.hparams.max_depth)
-        # print("Min depth for normalization:", self.hparams.min_depth)
-
         depth = torch.clamp(
             depth, min=self.hparams.min_depth, max=self.hparams.max_depth
         )
