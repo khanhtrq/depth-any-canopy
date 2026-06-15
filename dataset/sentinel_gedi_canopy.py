@@ -33,6 +33,8 @@ class GediSentinelDataset(Dataset):
         self.mode = mode
         self.ratio_train = ratio_train
 
+        self.max_height = 30
+
         self.sentinel_paths = []
         self.gedi_paths = []
 
@@ -97,7 +99,7 @@ class GediSentinelDataset(Dataset):
             T.ToTensor()
         ])
 
-        gedi = gedi / 70
+        gedi = gedi / self.max_height
         sentinel = transpose_sentinel(sentinel)
         gedi = torch.from_numpy(gedi)
 
