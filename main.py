@@ -39,7 +39,7 @@ def main(args: DictConfig):
         experiment_id = logger.experiment.id
 
     checkpoint_callback = ModelCheckpoint(
-        monitor="val_loss",
+        monitor="val_Loss(MSE)",
         dirpath=f"checkpoints/{experiment_id}",
         filename="depth-any-canopy-{epoch:02d}-{val_loss:.2f}",
         save_top_k=3,
