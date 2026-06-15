@@ -142,7 +142,7 @@ class DepthAnythingV2Module(LightningModule):
         self.train_metric(pred[valid_mask], depth[valid_mask])
         
         # Log loss
-        self.log("train_Loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("train_Loss(MSE)", loss, prog_bar=True, on_step=True, on_epoch=True)
         
         # Log metrics with RMSE
         metrics = self.train_metric.compute()
@@ -175,7 +175,7 @@ class DepthAnythingV2Module(LightningModule):
         self.val_metric(pred[valid_mask], depth[valid_mask])
         
         # Log loss with on_step=True to show per-batch updates
-        self.log("val_Loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("val_Loss(MSE)", loss, prog_bar=True, on_step=True, on_epoch=True)
         
         # Log metrics
         metrics = self.val_metric.compute()
