@@ -47,7 +47,7 @@ def main(args: DictConfig):
     )
 
     early_stopping = EarlyStopping(
-        monitor="val_loss", patience=20, mode="min", verbose=True
+        monitor="val_MAE", patience=20, mode="min", verbose=True
     )
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
