@@ -125,16 +125,20 @@ class GediSentinelDataset(Dataset):
         fig, axs = plt.subplots(nrows=1, ncols=ncols, figsize=(ncols * 4, 4))
         axs[0].imshow(image.permute(1, 2, 0))
         axs[0].axis("off")
-        axs[1].imshow(
+        
+        im1 = axs[1].imshow(
             mask.squeeze(), interpolation="none", cmap="Spectral_r", vmin=0, vmax=1
         )
         axs[1].axis("off")
+        cbar1 = plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
+        cbar1.set_label("Canopy Height (0-70m)", rotation=270, labelpad=15)
+        
         if show_titles:
             axs[0].set_title("Image")
             axs[1].set_title("Mask")
 
         if showing_prediction:
-            axs[2].imshow(
+            im2 = axs[2].imshow(
                 prediction.squeeze(),
                 interpolation="none",
                 cmap="Spectral_r",
@@ -142,10 +146,12 @@ class GediSentinelDataset(Dataset):
                 vmax=1,
             )
             axs[2].axis("off")
+            cbar2 = plt.colorbar(im2, ax=axs[2], fraction=0.046, pad=0.04)
+            cbar2.set_label("Canopy Height (0-70m)", rotation=270, labelpad=15)
             if show_titles:
                 axs[2].set_title("Prediction")
+        
         return fig
-
 
 class GediSentinelDataModule(L.LightningDataModule):
     def __init__(
