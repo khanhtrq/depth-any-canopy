@@ -136,11 +136,6 @@ class DepthAnythingV2Module(LightningModule):
 
         # print("Loss:", loss)
 
-        self.log("train_loss", loss,
-                 prog_bar=True,   # show in progress bar
-                on_step=True,
-                on_epoch=True,)
-        
         # Log metrics for training
         self.metric(pred[valid_mask], depth[valid_mask])
         self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
@@ -150,33 +145,28 @@ class DepthAnythingV2Module(LightningModule):
         return loss
 
 
+    
     def validation_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
 
         pred = self.model(img).predicted_depth
-
-        # pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
-        # self.print(f"Valid pixels: {num_valid}")
 
         loss = self.loss(
             pred[valid_mask],
             depth[valid_mask]
         )
 
-        self.log("val_loss", loss)
-                #  prog_bar=True,   # show in progress bar
-                # on_step=True,
-                # on_epoch=True)
-
+        self.log("val_loss", loss, prog_bar=True)
+        
         # Log metrics for validation
         self.metric(pred[valid_mask], depth[valid_mask])
         self.log_dict({f"val_{k}": v for k, v in self.metric.compute().items()}, prog_bar=True)
         self.metric.reset()
-        
+
         if batch_idx < 10 and self.logger is not None:
             fig = self.trainer.datamodule.val_dataset.plot(
                 img[0].cpu().detach(), depth[0].cpu().detach(), pred[0].cpu().detach()
@@ -184,7 +174,6 @@ class DepthAnythingV2Module(LightningModule):
             self.logger.experiment.log_figure(
                 figure=fig, figure_name=f"val_{batch_idx}"
             )
-            # fig.savefig(f"logs/val_{batch_idx}.png")
             plt.close(fig)
 
         return loss
