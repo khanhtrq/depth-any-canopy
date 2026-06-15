@@ -51,7 +51,7 @@ def main(args: DictConfig):
     )
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    progress_bar = TQDMProgressBar(refresh_rate=1)
+    progress_bar = TQDMProgressBar(refresh_rate=10)
 
     callback = [checkpoint_callback, early_stopping, progress_bar]
     if logger:
@@ -66,6 +66,7 @@ def main(args: DictConfig):
         limit_val_batches=50,
         val_check_interval=1.0,
         enable_progress_bar=True,
+        enable_model_summary=False
     )
 
     print("Fitting to trainer")
