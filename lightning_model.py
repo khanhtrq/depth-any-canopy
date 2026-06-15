@@ -115,8 +115,8 @@ class DepthAnythingV2Module(LightningModule):
         # print("depth.shape[-2:]", depth.shape[-2:])
         # print("pred.shape", pred.shape)
 
-        # pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
-        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
+        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        # pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
@@ -183,8 +183,8 @@ class DepthAnythingV2Module(LightningModule):
 
         pred = self.model(img).predicted_depth
 
-        # pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
-        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
+        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        # pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()

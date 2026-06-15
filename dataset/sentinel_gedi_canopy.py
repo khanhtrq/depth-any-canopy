@@ -93,6 +93,7 @@ class GediSentinelDataset(Dataset):
             T.ToTensor()
         ])
 
+        gedi = gedi / 70
         sentinel = transpose_sentinel(sentinel)
         gedi = torch.from_numpy(gedi)
 
