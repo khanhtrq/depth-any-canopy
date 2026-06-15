@@ -156,7 +156,7 @@ class DepthAnythingV2Module(LightningModule):
         
         return loss
 
-    
+
     def validation_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
 
@@ -174,16 +174,16 @@ class DepthAnythingV2Module(LightningModule):
         # Compute and log validation metrics with custom names
         self.val_metric(pred[valid_mask], depth[valid_mask])
         
-        # Log loss
-        self.log("val_Loss", loss, prog_bar=True)
+        # Log loss with on_step=True to show per-batch updates
+        self.log("val_Loss", loss, prog_bar=True, on_step=True, on_epoch=True)
         
         # Log metrics
         metrics = self.val_metric.compute()
-        self.log_dict(metrics, prog_bar=True)
+        self.log_dict(metrics, prog_bar=True, on_step=True, on_epoch=True)
         
         # Manually compute and log RMSE
         rmse = torch.sqrt(metrics.get("val_MSE", torch.tensor(0.0)))
-        self.log("val_RMSE", rmse, prog_bar=True)
+        self.log("val_RMSE", rmse, prog_bar=True, on_step=True, on_epoch=True)
         
         self.val_metric.reset()
 
@@ -196,7 +196,7 @@ class DepthAnythingV2Module(LightningModule):
             )
             plt.close(fig)
 
-        return loss
+        return loss    
 
     def test_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
