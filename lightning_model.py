@@ -140,7 +140,15 @@ class DepthAnythingV2Module(LightningModule):
                  prog_bar=True,   # show in progress bar
                 on_step=True,
                 on_epoch=True,)
+        
+        # Log metrics for training
+        self.metric(pred[valid_mask], depth[valid_mask])
+        self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log_dict({f"train_{k}": v for k, v in self.metric.compute().items()}, on_step=False, on_epoch=True)
+        self.metric.reset()
+        
         return loss
+
 
     def validation_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
@@ -163,9 +171,12 @@ class DepthAnythingV2Module(LightningModule):
                 #  prog_bar=True,   # show in progress bar
                 # on_step=True,
                 # on_epoch=True)
-        self.metric(pred, depth)
-        self.log_dict(self.metric)
 
+        # Log metrics for validation
+        self.metric(pred[valid_mask], depth[valid_mask])
+        self.log_dict({f"val_{k}": v for k, v in self.metric.compute().items()}, prog_bar=True)
+        self.metric.reset()
+        
         if batch_idx < 10 and self.logger is not None:
             fig = self.trainer.datamodule.val_dataset.plot(
                 img[0].cpu().detach(), depth[0].cpu().detach(), pred[0].cpu().detach()
