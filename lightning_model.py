@@ -85,7 +85,12 @@ class DepthAnythingV2Module(LightningModule):
                         "depth-anything/Depth-Anything-V2-Small-hf", cache_dir="cache"
                     ).train()
         else:
-            self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
+            config = transformers.AutoConfig.from_pretrained(
+                self.size_map[encoder],
+                cache_dir="cache"
+            )
+
+            self.model = transformers.AutoModelForDepthEstimation.from_config(config).train()
 
         self.loss = nn.MSELoss()
         
