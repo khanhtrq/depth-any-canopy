@@ -49,7 +49,8 @@ class DepthAnythingV2Module(LightningModule):
 
     def __init__(
         self,
-        encoder: Literal["vits", "vitb", "vitl", "vitg", "vits"],
+        encoder: Literal["vits", "vitb", "vitl", "vitg"],
+        pretrained_from: Literal["depth-anything", "depth-anycanopy"],
         min_depth: float = 1e-4,
         max_depth: float = 20,
         lr: float = 0.000005,
@@ -73,10 +74,16 @@ class DepthAnythingV2Module(LightningModule):
                     strict=False,
                 )
             else:
-                print("Loading model from Hugging Face: {}".format(self.size_map[encoder]))
-                self.model = transformers.AutoModelForDepthEstimation.from_pretrained(
-                    self.size_map[encoder], cache_dir="cache"
-                ).train()
+                if pretrained_from == "depth-anycanopy":
+                    print("Loading model from Hugging Face: {}".format(self.size_map[encoder]))
+                    self.model = transformers.AutoModelForDepthEstimation.from_pretrained(
+                        self.size_map[encoder], cache_dir="cache"
+                    ).train()
+                elif pretrained_from == "depth-anything":
+                    print("Loading model from Hugging Face: {}".format("depth-anything/Depth-Anything-V2-Small-hf"))
+                    self.model = transformers.AutoModelForDepthEstimation.from_pretrained(
+                        "depth-anything/Depth-Anything-V2-Small-hf", cache_dir="cache"
+                    ).train()
         else:
             self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
 
