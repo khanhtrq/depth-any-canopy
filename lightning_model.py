@@ -211,6 +211,11 @@ class DepthAnythingV2Module(LightningModule):
             self.logger.experiment.log_figure(
                 figure=fig, figure_name=f"val_{batch_idx}"
             )
+
+            os.makedirs(f"predictions/epoch_{self.current_epoch}", exist_ok=True)
+            fig.savefig(
+                f"predictions/epoch_{self.current_epoch}/batch_{batch_idx}.png"
+            )
             plt.close(fig)
 
         return loss    
