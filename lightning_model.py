@@ -203,7 +203,7 @@ class DepthAnythingV2Module(LightningModule):
         
         self.val_metric.reset()
 
-        print("Current epoch ", self.current_epoch, "Number of images", len(img), type(img), imag.shape)
+        print("Current epoch ", self.current_epoch, "Number of images", len(img), type(img), img.shape)
         # if batch_idx < 10 and self.logger is not None:
         if self.current_epoch % 5 == 0 and self.logger is not None:
             fig = self.trainer.datamodule.val_dataset.plot(
