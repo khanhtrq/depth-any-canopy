@@ -52,7 +52,7 @@ class DepthAnythingV2Module(LightningModule):
         encoder: Literal["vits", "vitb", "vitl", "vitg"],
         pretrained_from: Literal["depth-anything", "depth-anycanopy"],
         min_depth: float = 1e-4,
-        max_depth: float = 20,
+        max_depth: float = 30.0,
         lr: float = 0.000005,
         use_huggingface: bool = False,
         pretrained: bool = True,
