@@ -21,7 +21,7 @@ from torchmetrics import MetricCollection, classification, regression
 
 class DepthAnythingV2Module(LightningModule):
     model_configs = {
-        "vits_CH": {"encoder": "vits_CH", "features": 64, "out_channels": [48, 96, 192, 384]},
+        "vits": {"encoder": "vits", "features": 64, "out_channels": [48, 96, 192, 384]},
         "vitb": {
             "encoder": "vitb",
             "features": 128,
@@ -40,42 +40,46 @@ class DepthAnythingV2Module(LightningModule):
     }
 
     size_map = {
-        # "vits_CH": "depth-anything/Depth-Anything-V2-Small-hf",
-        "vits_CH": "DarthReca/depth-any-canopy-small", 
-        "vits_depth_anything": "depth-anything/Depth-Anything-V2-Small-hf",
-        "vitb_depth_anything": "depth-anything/Depth-Anything-V2-Base-hf",
-        "vitl_depth_anything": "depth-anything/Depth-Anything-V2-Large-hf",
+        # "vits": "depth-anything/Depth-Anything-V2-Small-hf",
+        "vits": "DarthReca/depth-any-canopy-small", 
+        "vits": "DarthReca/depth-any-canopy-small", 
+        "vitb": "depth-anything/Depth-Anything-V2-Base-hf",
+        "vitl": "depth-anything/Depth-Anything-V2-Large-hf",
         "vitg": None,
     }
 
     def __init__(
         self,
-        encoder: Literal["vits_CH", "vitb_depth_anything", "vitl_depth_anything", "vitg", "vits_depth_anything"],
+        encoder: Literal["vits", "vitb", "vitl", "vitg", "vits"],
         min_depth: float = 1e-4,
         max_depth: float = 20,
         lr: float = 0.000005,
         use_huggingface: bool = False,
+        pretrained: bool = True,
         **kwargs,
     ):
         super().__init__()
         self.save_hyperparameters()
 
-        if not use_huggingface:
-            pretrained_from = f"base-checkpoints/{encoder}.pth"
-            self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
-            self.model.load_state_dict(
-                {
-                    k: v
-                    for k, v in torch.load(pretrained_from, map_location="cpu").items()
-                    if "pretrained" in k
-                },
-                strict=False,
-            )
+        if pretrained:
+            if not use_huggingface:
+                pretrained_from = f"base-checkpoints/{encoder}.pth"
+                self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
+                self.model.load_state_dict(
+                    {
+                        k: v
+                        for k, v in torch.load(pretrained_from, map_location="cpu").items()
+                        if "pretrained" in k
+                    },
+                    strict=False,
+                )
+            else:
+                print("Loading model from Hugging Face: {}".format(self.size_map[encoder]))
+                self.model = transformers.AutoModelForDepthEstimation.from_pretrained(
+                    self.size_map[encoder], cache_dir="cache"
+                ).train()
         else:
-            print("Loading model from Hugging Face: {}".format(self.size_map[encoder]))
-            self.model = transformers.AutoModelForDepthEstimation.from_pretrained(
-                self.size_map[encoder], cache_dir="cache"
-            ).train()
+            self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
 
         self.loss = nn.MSELoss()
         

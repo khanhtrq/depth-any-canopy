@@ -1,4 +1,4 @@
-encoder: vits_CH
+encoder: vits
 # min_depth: 0.000001
 # max_depth: 1.0
 lr: 5e-6
