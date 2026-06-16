@@ -53,7 +53,9 @@ def main(args: DictConfig):
     lr_monitor = LearningRateMonitor(logging_interval="step")
     progress_bar = TQDMProgressBar(refresh_rate=10)
 
-    callback = [checkpoint_callback, early_stopping, progress_bar]
+    # callback = [checkpoint_callback, early_stopping, progress_bar]
+    # No early stopping 
+    callback = [checkpoint_callback, progress_bar]
     if logger:
         callback.append(lr_monitor)
 

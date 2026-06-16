@@ -21,7 +21,7 @@ from torchmetrics import MetricCollection, classification, regression
 
 class DepthAnythingV2Module(LightningModule):
     model_configs = {
-        "vits": {"encoder": "vits", "features": 64, "out_channels": [48, 96, 192, 384]},
+        "vits_CH": {"encoder": "vits_CH", "features": 64, "out_channels": [48, 96, 192, 384]},
         "vitb": {
             "encoder": "vitb",
             "features": 128,
@@ -40,16 +40,17 @@ class DepthAnythingV2Module(LightningModule):
     }
 
     size_map = {
-        # "vits": "depth-anything/Depth-Anything-V2-Small-hf",
-        "vits": "DarthReca/depth-any-canopy-small", 
-        "vitb": "depth-anything/Depth-Anything-V2-Base-hf",
-        "vitl": "depth-anything/Depth-Anything-V2-Large-hf",
+        # "vits_CH": "depth-anything/Depth-Anything-V2-Small-hf",
+        "vits_CH": "DarthReca/depth-any-canopy-small", 
+        "vits_depth_anything": "depth-anything/Depth-Anything-V2-Small-hf",
+        "vitb_depth_anything": "depth-anything/Depth-Anything-V2-Base-hf",
+        "vitl_depth_anything": "depth-anything/Depth-Anything-V2-Large-hf",
         "vitg": None,
     }
 
     def __init__(
         self,
-        encoder: Literal["vits", "vitb", "vitl", "vitg"],
+        encoder: Literal["vits_CH", "vitb_depth_anything", "vitl_depth_anything", "vitg", "vits_depth_anything"],
         min_depth: float = 1e-4,
         max_depth: float = 20,
         lr: float = 0.000005,
