@@ -137,7 +137,7 @@ class GediSentinelDataset(Dataset):
         )
         axs[1].axis("off")
         cbar1 = plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
-        cbar1.set_label("Canopy Height (0-70m)", rotation=270, labelpad=15)
+        cbar1.set_label("Canopy Height (0-30m)", rotation=270, labelpad=15)
         
         if show_titles:
             axs[0].set_title("Image")
@@ -153,7 +153,7 @@ class GediSentinelDataset(Dataset):
             )
             axs[2].axis("off")
             cbar2 = plt.colorbar(im2, ax=axs[2], fraction=0.046, pad=0.04)
-            cbar2.set_label("Canopy Height (0-70m)", rotation=270, labelpad=15)
+            cbar2.set_label("Canopy Height (0-30m)", rotation=270, labelpad=15)
             if show_titles:
                 axs[2].set_title("Prediction")
         

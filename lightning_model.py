@@ -177,7 +177,7 @@ class DepthAnythingV2Module(LightningModule):
         img, depth = self._preprocess_batch(batch)
 
         pred = self.model(img).predicted_depth
-        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 70)
+        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 30)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
@@ -203,6 +203,7 @@ class DepthAnythingV2Module(LightningModule):
         
         self.val_metric.reset()
 
+        print("Current epoch ", self.current_epoch)
         if batch_idx < 10 and self.logger is not None:
             fig = self.trainer.datamodule.val_dataset.plot(
                 img[0].cpu().detach(), depth[0].cpu().detach(), pred[0].cpu().detach()
