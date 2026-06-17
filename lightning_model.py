@@ -206,18 +206,19 @@ class DepthAnythingV2Module(LightningModule):
         print("Current epoch ", self.current_epoch, "Number of images", len(img), type(img), img.shape)
         # if batch_idx < 10 and self.logger is not None:
         if self.current_epoch % 5 == 0 and self.logger is not None:
-            fig = self.trainer.datamodule.val_dataset.plot(
-                img[0].cpu().detach(), depth[0].cpu().detach(), pred[0].cpu().detach()
-            )
-            self.logger.experiment.log_figure(
-                figure=fig, figure_name=f"val_{batch_idx}"
-            )
+            for i in range(img.shape[0]):
+                fig = self.trainer.datamodule.val_dataset.plot(
+                    img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach()
+                )
+                self.logger.experiment.log_figure(
+                    figure=fig, figure_name=f"val_{batch_idx*img.shape[0] + i}"
+                )
 
-            os.makedirs(f"predictions/epoch_{self.current_epoch}", exist_ok=True)
-            fig.savefig(
-                f"predictions/epoch_{self.current_epoch}/batch_{batch_idx}.png"
-            )
-            plt.close(fig)
+                os.makedirs(f"predictions/epoch_{self.current_epoch}", exist_ok=True)
+                fig.savefig(
+                    f"predictions/epoch_{self.current_epoch}/{batch_idx*img.shape[0] + i}.png"
+                )
+                plt.close(fig)
 
         return loss    
 
