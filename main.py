@@ -74,6 +74,9 @@ def main(args: DictConfig):
 
     trainer.fit(model, datamodule=data_module)
 
+    print("Testing")
+    trainer.test(model, datamodule=data_module, ckpt_path="best")
+
     print("Prediction")
     trainer.predict(model, datamodule=data_module, ckpt_path="best")
 

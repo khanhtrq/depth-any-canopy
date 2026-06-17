@@ -146,7 +146,7 @@ class GediSentinelDataset(Dataset):
         axs[0].axis("off")
         
         im1 = axs[1].imshow(
-            mask.squeeze(), interpolation="none", cmap="Spectral_r", vmin=0, vmax=1
+            mask.squeeze(), interpolation="none", cmap="YlGn", vmin=0, vmax=1
         )
         axs[1].axis("off")
         cbar1 = plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
@@ -160,7 +160,7 @@ class GediSentinelDataset(Dataset):
             im2 = axs[2].imshow(
                 prediction.squeeze(),
                 interpolation="none",
-                cmap="Spectral_r",
+                cmap="YlGn",
                 vmin=0,
                 vmax=1,
             )
