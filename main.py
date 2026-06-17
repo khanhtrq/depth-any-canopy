@@ -64,7 +64,7 @@ def main(args: DictConfig):
         callbacks=callback,
         log_every_n_steps=50,
         precision="32-true" if args.model.encoder == "vitl" else "32-true",
-        limit_val_batches=50,
+        limit_val_batches=1.0,
         val_check_interval=1.0,
         enable_progress_bar=True,
         enable_model_summary=False
@@ -74,7 +74,7 @@ def main(args: DictConfig):
 
     trainer.fit(model, datamodule=data_module)
 
-    print()
+    print("Prediction")
     trainer.predict(model, datamodule=data_module, ckpt_path="best")
 
 if __name__ == "__main__":

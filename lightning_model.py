@@ -258,6 +258,20 @@ class DepthAnythingV2Module(LightningModule):
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
+        for i in range(img.shape[0]):
+            fig = self.trainer.datamodule.val_dataset.plot(
+                img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach()
+            )
+            self.logger.experiment.log_figure(
+                figure=fig, figure_name=f"val_{batch_idx*img.shape[0] + i}"
+            )
+
+            os.makedirs(f"inference_predictions/epoch_{self.current_epoch}", exist_ok=True)
+            fig.savefig(
+                f"inference_predictions/epoch_{self.current_epoch}/{batch_idx*img.shape[0] + i}.png"
+            )
+            plt.close(fig)
+
         return pred
 
     def _preprocess_batch(self, batch):
