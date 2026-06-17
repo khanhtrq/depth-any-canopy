@@ -214,9 +214,9 @@ class DepthAnythingV2Module(LightningModule):
                     figure=fig, figure_name=f"val_{batch_idx*img.shape[0] + i}"
                 )
 
-                os.makedirs(f"predictions/epoch_{self.current_epoch}", exist_ok=True)
+                os.makedirs(f"validation_predictions/epoch_{self.current_epoch}", exist_ok=True)
                 fig.savefig(
-                    f"predictions/epoch_{self.current_epoch}/{batch_idx*img.shape[0] + i}.png"
+                    f"validation_predictions/epoch_{self.current_epoch}/{batch_idx*img.shape[0] + i}.png"
                 )
                 plt.close(fig)
 
@@ -251,6 +251,7 @@ class DepthAnythingV2Module(LightningModule):
         )
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
+        print(f"Processing batch {batch_idx}")
         img, depth = self._preprocess_batch(batch)
 
         pred = self.model(img).predicted_depth
