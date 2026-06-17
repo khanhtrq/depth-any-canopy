@@ -46,9 +46,10 @@ class GediSentinelDataset(Dataset):
             for i in range(len(gedi_paths_all)):
                 gedi_path = os.path.join(self.gedi_folder, gedi_paths_all[i])
                 gedi = np.load(gedi_path)
-       
-                if np.sum(~np.isnan(gedi)) >= 50:
 
+                # Originally exclude the patches with not enough points for GSenNet
+                # if np.sum(~np.isnan(gedi)) >= 50:
+                if np.sum(~np.isnan(gedi)) > 0:
                     self.gedi_paths.append(gedi_paths_all[i])
                     self.sentinel_paths.append(sentinel_paths_all[i])
 
