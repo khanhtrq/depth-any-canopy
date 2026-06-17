@@ -203,7 +203,7 @@ class DepthAnythingV2Module(LightningModule):
         
         self.val_metric.reset()
 
-        print("Current epoch ", self.current_epoch, "Number of images", len(img), type(img), img.shape)
+        # print("Current epoch ", self.current_epoch, "Number of images", len(img), type(img), img.shape)
         # if batch_idx < 10 and self.logger is not None:
         if self.current_epoch % 5 == 0 and self.logger is not None:
             for i in range(img.shape[0]):
@@ -251,7 +251,7 @@ class DepthAnythingV2Module(LightningModule):
         )
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        print(f"Processing batch {batch_idx}")
+        # print(f"Processing batch {batch_idx}")
         img, depth = self._preprocess_batch(batch)
 
         pred = self.model(img).predicted_depth
