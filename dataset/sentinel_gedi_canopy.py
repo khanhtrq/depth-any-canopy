@@ -254,7 +254,7 @@ class GediSentinelDataModule(L.LightningDataModule):
             pin_memory=True,
         )
 
-    def test_dataloader(self):
+    def predict_dataloader(self):
         return DataLoader(
             self.predict_dataset,
             batch_size=self.batch_size,
