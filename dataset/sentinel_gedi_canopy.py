@@ -26,12 +26,14 @@ class GediSentinelDataset(Dataset):
         regions,
         mode = "train",
         ratio_train = 0.8, 
+        predict=False,
     ):
         self.regions = regions
         self.gedi_folder = gedi_folder
         self.sentinel_folder = sentinel_folder
         self.mode = mode
         self.ratio_train = ratio_train
+        self.predict = predict
 
         self.max_height = 30
 
@@ -49,7 +51,14 @@ class GediSentinelDataset(Dataset):
 
                 # Originally exclude the patches with not enough points for GSenNet
                 # if np.sum(~np.isnan(gedi)) >= 50:
-                if np.sum(~np.isnan(gedi)) > 0:
+
+                # only include patches with GEDI point for training
+                if not self.predict:
+                    if np.sum(~np.isnan(gedi)) > 0:
+                        self.gedi_paths.append(gedi_paths_all[i])
+                        self.sentinel_paths.append(sentinel_paths_all[i])
+                # include all patches for prediction
+                else:
                     self.gedi_paths.append(gedi_paths_all[i])
                     self.sentinel_paths.append(sentinel_paths_all[i])
 
@@ -58,12 +67,15 @@ class GediSentinelDataset(Dataset):
         # rng = np.random.default_rng(seed=2404) 
         file_idx_all = rng.permutation(len(self.gedi_paths)) 
 
-        if self.mode == "train":
-            file_idx_train = file_idx_all[:int(self.ratio_train * len(self.gedi_paths))]
-            self.file_idx = file_idx_train
-        elif self.mode == "test" or self.mode == "val":
-            file_idx_test = file_idx_all[int(self.ratio_train * len(self.gedi_paths)):]
-            self.file_idx = file_idx_test
+        if not self.predict:
+            if self.mode == "train":
+                file_idx_train = file_idx_all[:int(self.ratio_train * len(self.gedi_paths))]
+                self.file_idx = file_idx_train
+            elif self.mode == "test" or self.mode == "val":
+                file_idx_test = file_idx_all[int(self.ratio_train * len(self.gedi_paths)):]
+                self.file_idx = file_idx_test
+        else:
+            self.file_idx = file_idx_all
         
         print("Dataset length:", len(self.file_idx))
 
