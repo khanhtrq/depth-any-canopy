@@ -266,10 +266,24 @@ class DepthAnythingV2Module(LightningModule):
                 figure=fig, figure_name=f"val_{batch_idx*img.shape[0] + i}"
             )
 
-            os.makedirs(f"inference_predictions/", exist_ok=True)
+            base_dir = "inference_predictions"
+            save_dir = base_dir
+
+            counter = 1
+            while os.path.exists(save_dir):
+                save_dir = f"{base_dir}_{counter}"
+                counter += 1
+
+            os.makedirs(save_dir)
+
             fig.savefig(
-                f"inference_predictions/{batch_idx*img.shape[0] + i}.png"
+                f"{save_dir}/{batch_idx * img.shape[0] + i}.png"
             )
+
+            # os.makedirs(f"inference_predictions/", exist_ok=True)
+            # fig.savefig(
+            #     f"inference_predictions/{batch_idx*img.shape[0] + i}.png"
+            # )
             plt.close(fig)
 
         return pred

@@ -74,11 +74,14 @@ def main(args: DictConfig):
 
     trainer.fit(model, datamodule=data_module)
 
-    print("Testing")
+    print("Testing best model")
     trainer.test(model, datamodule=data_module, ckpt_path="best")
+    print("Testing last model")
+    trainer.test(model, datamodule=data_module, ckpt_path="last")
 
     print("Prediction")
     trainer.predict(model, datamodule=data_module, ckpt_path="best")
+    trainer.predict(model, datamodule=data_module, ckpt_path="last")
 
 if __name__ == "__main__":
     main()
