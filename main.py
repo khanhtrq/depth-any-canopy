@@ -23,7 +23,6 @@ def main(args: DictConfig):
     
     print("Starting")
     data_module = GediSentinelDataModule()
-    data_module_pred = GediSentinelDataModule(predict=True)
     model = DepthAnythingV2Module(**args.model)
 
     experiment_id = time.strftime("%Y%m%d-%H%M%S")
@@ -75,6 +74,8 @@ def main(args: DictConfig):
 
     trainer.fit(model, datamodule=data_module)
 
+    print()
+    trainer.predict(model, datamodule=data_module, ckpt_path="best")
 
 if __name__ == "__main__":
     main()

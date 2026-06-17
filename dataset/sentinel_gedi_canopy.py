@@ -178,7 +178,6 @@ class GediSentinelDataModule(L.LightningDataModule):
         batch_size=4,
         num_workers=4,
         ratio_train=0.8,
-        predict=False,
     ):
         super().__init__()
 
@@ -189,7 +188,6 @@ class GediSentinelDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.ratio_train = ratio_train
-        self.predict = predict
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
@@ -199,7 +197,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 sentinel_folder=self.sentinel_folder,
                 mode="train",
                 ratio_train=self.ratio_train,
-                predict=self.predict,
+                predict=False,
             )
 
             self.val_dataset = GediSentinelDataset(
@@ -208,7 +206,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 sentinel_folder=self.sentinel_folder,
                 mode="val",
                 ratio_train=self.ratio_train,
-                predict=self.predict,
+                predict=False,
             )
 
         if stage == "test" or stage is None:
@@ -218,7 +216,15 @@ class GediSentinelDataModule(L.LightningDataModule):
                 sentinel_folder=self.sentinel_folder,
                 mode="test",
                 ratio_train=self.ratio_train,
-                predict=self.predict,
+                predict=False,
+            )
+        
+        if stage == "predict":
+            self.predict_dataset = GediSentinelDataset(
+                regions=self.regions,
+                gedi_folder=self.gedi_folder,
+                sentinel_folder=self.sentinel_folder,
+                predict=True,       # include all patches
             )
 
     def train_dataloader(self):
