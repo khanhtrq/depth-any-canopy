@@ -91,7 +91,7 @@ class GediSentinelDataset(Dataset):
                 self.file_idx = file_idx_test
         else:
             #without permutation for prediction, to keep the order of the patches
-            file_idx_all = self.gedi_paths)
+            file_idx_all = self.gedi_paths
             self.file_idx = file_idx_all
         
         print("Dataset length:", len(self.file_idx))
