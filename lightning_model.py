@@ -205,7 +205,7 @@ class DepthAnythingV2Module(LightningModule):
 
         # print("Current epoch ", self.current_epoch, "Number of images", len(img), type(img), img.shape)
         # if batch_idx < 10 and self.logger is not None:
-        if self.current_epoch % 5 == 0 and self.logger is not None:
+        if self.current_epoch % 20 == 0 and self.logger is not None:
             for i in range(img.shape[0]):
                 fig = self.trainer.datamodule.val_dataset.plot(
                     img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach()

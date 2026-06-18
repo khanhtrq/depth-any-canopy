@@ -42,8 +42,21 @@ class GediSentinelDataset(Dataset):
 
         for r in self.regions:
             # filtering patches with not enough GEDI points
-            gedi_paths_all = [os.path.join(r, file_name) for file_name in os.listdir(os.path.join(self.gedi_folder, r))]
-            sentinel_paths_all = [os.path.join(r, file_name) for file_name in os.listdir(os.path.join(self.sentinel_folder, r))]
+            gedi_paths_all = [
+                os.path.join(r, file_name)
+                for file_name in sorted(
+                    os.listdir(os.path.join(self.gedi_folder, r)),
+                    key=lambda x: int(os.path.splitext(x)[0])
+                )
+            ]
+
+            sentinel_paths_all = [
+                os.path.join(r, file_name)
+                for file_name in sorted(
+                    os.listdir(os.path.join(self.sentinel_folder, r)),
+                    key=lambda x: int(os.path.splitext(x)[0])
+                )
+            ]
             
             for i in range(len(gedi_paths_all)):
                 gedi_path = os.path.join(self.gedi_folder, gedi_paths_all[i])
