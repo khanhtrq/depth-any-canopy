@@ -77,12 +77,13 @@ class GediSentinelDataset(Dataset):
                     self.sentinel_paths.append(sentinel_paths_all[i])
 
 
-
         if not self.predict:
             #Spliting data into train and test set
             rng = np.random.default_rng(seed=42)   # fixed seed
             # rng = np.random.default_rng(seed=2404) 
             file_idx_all = rng.permutation(len(self.gedi_paths)) 
+            print(file_idx_all)
+            print(self.gedi_paths)
             if self.mode == "train":
                 file_idx_train = file_idx_all[:int(self.ratio_train * len(self.gedi_paths))]
                 self.file_idx = file_idx_train
