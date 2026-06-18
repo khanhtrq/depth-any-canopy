@@ -57,7 +57,10 @@ class GediSentinelDataset(Dataset):
                     key=lambda x: int(os.path.splitext(x)[0])
                 )
             ]
-            
+
+            print(gedi_paths_all)
+            print(sentinel_paths_all)
+
             for i in range(len(gedi_paths_all)):
                 gedi_path = os.path.join(self.gedi_folder, gedi_paths_all[i])
                 gedi = np.load(gedi_path)
