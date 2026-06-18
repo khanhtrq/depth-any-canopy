@@ -80,7 +80,7 @@ def main(args: DictConfig):
     trainer.test(model, datamodule=data_module, ckpt_path="last")
 
     print("Prediction")
-    trainer.predict(model, datamodule=data_module, ckpt_path="best")
+    # trainer.predict(model, datamodule=data_module, ckpt_path="best")
     trainer.predict(model, datamodule=data_module, ckpt_path="last")
 
 if __name__ == "__main__":
