@@ -78,12 +78,13 @@ class GediSentinelDataset(Dataset):
                     self.gedi_paths.append(gedi_paths_all[i])
                     self.sentinel_paths.append(sentinel_paths_all[i])
 
-        #Spliting data into train and test set
-        rng = np.random.default_rng(seed=42)   # fixed seed
-        # rng = np.random.default_rng(seed=2404) 
-        file_idx_all = rng.permutation(len(self.gedi_paths)) 
+
 
         if not self.predict:
+            #Spliting data into train and test set
+            rng = np.random.default_rng(seed=42)   # fixed seed
+            # rng = np.random.default_rng(seed=2404) 
+            file_idx_all = rng.permutation(len(self.gedi_paths)) 
             if self.mode == "train":
                 file_idx_train = file_idx_all[:int(self.ratio_train * len(self.gedi_paths))]
                 self.file_idx = file_idx_train
@@ -91,6 +92,8 @@ class GediSentinelDataset(Dataset):
                 file_idx_test = file_idx_all[int(self.ratio_train * len(self.gedi_paths)):]
                 self.file_idx = file_idx_test
         else:
+            #without permutation for prediction, to keep the order of the patches
+            file_idx_all = self.gedi_paths)
             self.file_idx = file_idx_all
         
         print("Dataset length:", len(self.file_idx))
