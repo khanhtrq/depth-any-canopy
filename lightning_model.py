@@ -250,6 +250,10 @@ class DepthAnythingV2Module(LightningModule):
             }
         )
 
+    def on_predict_start(self):
+        self.batch_size = self.trainer.predict_dataloaders.batch_size
+
+
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         # print(f"Processing batch {batch_idx}")
         img, depth = self._preprocess_batch(batch)
@@ -286,6 +290,7 @@ class DepthAnythingV2Module(LightningModule):
             plt.close(fig)
 
             print("Batch ", batch_idx, "Image ", i, " saved to ", f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png")
+            print(self.batch_size)
 
         return pred
 
