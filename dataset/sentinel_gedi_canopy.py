@@ -14,9 +14,9 @@ gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/G
 sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel-12band/Sentinel-12band"
 regions = ["CucPhuong", "BaBe"]
 
-# gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
-# sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
-# regions = ["CaMau"]
+gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
+sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
+regions = ["CaMau"]
 
 class GediSentinelDataset(Dataset):
     def __init__(
@@ -268,6 +268,7 @@ class GediSentinelDataModule(L.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             pin_memory=True,
+            drop_last=False
         )
 
     def predict_dataloader(self):
@@ -277,4 +278,5 @@ class GediSentinelDataModule(L.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             pin_memory=True,
+            drop_last=False
         )
