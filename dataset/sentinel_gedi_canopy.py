@@ -35,7 +35,7 @@ class GediSentinelDataset(Dataset):
         self.ratio_train = ratio_train
         self.predict = predict
 
-        self.max_height = 50
+        self.max_height = 30
 
         self.sentinel_paths = []
         self.gedi_paths = []
