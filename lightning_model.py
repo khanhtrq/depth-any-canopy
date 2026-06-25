@@ -285,6 +285,8 @@ class DepthAnythingV2Module(LightningModule):
             )
             plt.close(fig)
 
+            print("Batch ", batch_idx, "Image ", i, " saved to ", f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png")
+
         return pred
 
     def _preprocess_batch(self, batch):
