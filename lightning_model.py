@@ -279,16 +279,16 @@ class DepthAnythingV2Module(LightningModule):
             os.makedirs(f"{save_dir}/image", exist_ok=True)
             os.makedirs(f"{save_dir}/np_array", exist_ok=True)
             fig.savefig(
-                f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png"
+                # f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png"
+                f"{save_dir}/image/{batch_idx * 4 + i}.png"
             )
             np.save(
-                f"{save_dir}/np_array/{batch_idx * img.shape[0] + i}.npy",
+                f"{save_dir}/np_array/{batch_idx * 4 + i}.npy",
                 pred[i].cpu().detach().numpy()
             )
             plt.close(fig)
 
             # print("Batch ", batch_idx, "Image ", i, " saved to ", f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png")
-            print("Batch ", batch_idx, "Image ", i, " saved to ", f"{save_dir}/image/{batch_idx * 4 + i}.png")
 
         return pred
 
