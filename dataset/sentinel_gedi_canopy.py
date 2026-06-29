@@ -214,6 +214,8 @@ class GediSentinelDataModule(L.LightningDataModule):
 
         self.all_train_data = all_train_data
 
+        print("All data in the train set:", all_train_data)
+
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
             self.train_dataset = GediSentinelDataset(
