@@ -24,7 +24,7 @@ def main(args: DictConfig):
     print("Starting")
 
     print(args)
-    data_module = GediSentinelDataModule(all_train_data=True)
+    data_module = GediSentinelDataModule(**args.model)
     model = DepthAnythingV2Module(**args.model)
 
     experiment_id = time.strftime("%Y%m%d-%H%M%S")
