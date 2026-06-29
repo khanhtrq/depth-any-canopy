@@ -27,6 +27,7 @@ class GediSentinelDataset(Dataset):
         mode = "train",
         ratio_train = 0.8, 
         predict=False,
+        all_train_data=False,
     ):
         self.regions = regions
         self.gedi_folder = gedi_folder
@@ -36,6 +37,7 @@ class GediSentinelDataset(Dataset):
         self.predict = predict
 
         self.max_height = 30
+        self.all_train_data = all_train_data
 
         self.sentinel_paths = []
         self.gedi_paths = []
@@ -83,8 +85,12 @@ class GediSentinelDataset(Dataset):
             # rng = np.random.default_rng(seed=2404) 
             file_idx_all = rng.permutation(len(self.gedi_paths)) 
             if self.mode == "train":
-                file_idx_train = file_idx_all[:int(self.ratio_train * len(self.gedi_paths))]
-                self.file_idx = file_idx_train
+                if self.all_train_data:
+                    file_idx_train = file_idx_all
+                    self.file_idx = file_idx_train
+                else:
+                    file_idx_train = file_idx_all[:int(self.ratio_train * len(self.gedi_paths))]
+                    self.file_idx = file_idx_train
             elif self.mode == "test" or self.mode == "val":
                 file_idx_test = file_idx_all[int(self.ratio_train * len(self.gedi_paths)):]
                 self.file_idx = file_idx_test
@@ -194,6 +200,7 @@ class GediSentinelDataModule(L.LightningDataModule):
         batch_size=4,
         num_workers=4,
         ratio_train=0.8,
+        all_train_data= False
     ):
         super().__init__()
 
@@ -204,6 +211,8 @@ class GediSentinelDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.ratio_train = ratio_train
+
+        self.all_train_data = all_train_data
 
     def setup(self, stage=None):
         if stage == "fit" or stage is None:
