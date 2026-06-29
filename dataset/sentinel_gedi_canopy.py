@@ -259,6 +259,8 @@ class GediSentinelDataModule(L.LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             pin_memory=True,
+            all_train_data = self.all_train_data
+            
         )
 
     def val_dataloader(self):
