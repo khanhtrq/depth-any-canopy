@@ -22,7 +22,7 @@ def main(args: DictConfig):
     torch.set_float32_matmul_precision("medium")
     
     print("Starting")
-    data_module = GediSentinelDataModule()
+    data_module = GediSentinelDataModule(all_train_data=True)
     model = DepthAnythingV2Module(**args.model)
 
     experiment_id = time.strftime("%Y%m%d-%H%M%S")
