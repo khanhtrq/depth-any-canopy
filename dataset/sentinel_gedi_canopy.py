@@ -14,9 +14,9 @@ gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/G
 sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel-12band/Sentinel-12band"
 regions = ["CucPhuong", "BaBe"]
 
-gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
-sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
-regions = ["CaMau"]
+# gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
+# sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
+# regions = ["CaMau"]
 
 class GediSentinelDataset(Dataset):
     def __init__(
@@ -28,6 +28,7 @@ class GediSentinelDataset(Dataset):
         ratio_train = 0.8, 
         predict=False,
         all_train_data=False,
+        max_height = 30,
     ):
         self.regions = regions
         self.gedi_folder = gedi_folder
@@ -36,7 +37,7 @@ class GediSentinelDataset(Dataset):
         self.ratio_train = ratio_train
         self.predict = predict
 
-        self.max_height = 30
+        self.max_height = max_height
         self.all_train_data = all_train_data
 
         self.sentinel_paths = []
