@@ -14,9 +14,9 @@ gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/G
 sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel-12band/Sentinel-12band"
 regions = ["CucPhuong", "BaBe"]
 
-# gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
-# sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
-# regions = ["CaMau"]
+gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
+sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
+regions = ["CaMau"]
 
 class GediSentinelDataset(Dataset):
     def __init__(
