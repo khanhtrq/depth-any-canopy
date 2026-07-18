@@ -14,9 +14,9 @@ gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/G
 sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel-12band/Sentinel-12band"
 regions = ["CucPhuong", "BaBe"]
 
-gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
-sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
-regions = ["CaMau"]
+# gedi_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau"
+# sentinel_folder = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau"
+# regions = ["CaMau"]
 
 class GediSentinelDataset(Dataset):
     def __init__(
@@ -146,7 +146,7 @@ class GediSentinelDataset(Dataset):
         # print("GEDI", gedi[~torch.isnan(gedi)].min(), gedi[~torch.isnan(gedi)].max())
 
         sample = {
-            "image": sentinel,  #sentinel[1:4, :, :],  # using RGB bands only
+            "image": sentinel[1:4, :, :],  # using RGB bands only
             "mask": gedi,
         }
 
