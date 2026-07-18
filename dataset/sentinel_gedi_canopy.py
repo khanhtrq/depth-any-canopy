@@ -198,6 +198,9 @@ class GediSentinelDataset(Dataset):
 class GediSentinelDataModule(L.LightningDataModule):
     def __init__(
         self,
+        regions,
+        gedi_folder,
+        sentinel_folder,
         batch_size=4,
         num_workers=4,
         ratio_train=0.8,
