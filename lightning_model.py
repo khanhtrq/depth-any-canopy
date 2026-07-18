@@ -92,6 +92,8 @@ class DepthAnythingV2Module(LightningModule):
 
             self.model = transformers.AutoModelForDepthEstimation.from_config(config).train()
 
+            print(config)
+
         self.loss = nn.MSELoss()
         
         # Training metrics
