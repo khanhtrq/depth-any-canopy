@@ -146,7 +146,7 @@ class GediSentinelDataset(Dataset):
         # print("GEDI", gedi[~torch.isnan(gedi)].min(), gedi[~torch.isnan(gedi)].max())
 
         sample = {
-            "image": sentinel[1:4, :, :],  # using RGB bands only
+            "image": sentinel,  #sentinel[1:4, :, :],  # using RGB bands only
             "mask": gedi,
         }
 
