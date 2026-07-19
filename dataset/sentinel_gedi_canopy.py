@@ -157,6 +157,8 @@ class GediSentinelDataset(Dataset):
         if prediction is not None:
             prediction = prediction.clip(0, 1).float()
         # Convert image to [0, 1] range
+        if image.shape[0] == 12:
+            image = image[1:4, :, :]
         image = image.float()
         image = image - image.min()
         image = image / image.max()
