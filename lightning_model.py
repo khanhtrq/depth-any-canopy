@@ -65,14 +65,14 @@ class DepthAnythingV2Module(LightningModule):
             if not use_huggingface:
                 pretrained_from = f"base-checkpoints/{encoder}.pth"
                 self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
-                self.model.load_state_dict(
-                    {
-                        k: v
-                        for k, v in torch.load(pretrained_from, map_location="cpu").items()
-                        if "pretrained" in k
-                    },
-                    strict=False,
-                )
+                # self.model.load_state_dict(
+                #     {
+                #         k: v
+                #         for k, v in torch.load(pretrained_from, map_location="cpu").items()
+                #         if "pretrained" in k
+                #     },
+                #     strict=False,
+                # )
             else:
                 if pretrained_from == "depth-anycanopy":
                     print("Loading model from Hugging Face: {}".format(self.size_map[encoder]))
