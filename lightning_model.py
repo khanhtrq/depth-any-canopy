@@ -61,6 +61,8 @@ class DepthAnythingV2Module(LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
+        self.use_huggingface = use_huggingface
+
         if pretrained:
             if not use_huggingface:
                 pretrained_from = f"base-checkpoints/{encoder}.pth"
@@ -145,8 +147,12 @@ class DepthAnythingV2Module(LightningModule):
     def training_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
 
-        pred = self.model(img)
-        # .predicted_depth
+        if self.use_huggingface:
+            # For Hugging Face models, the output is a dictionary with 'predicted_depth' key
+            pred = self.model(img).predicted_depth
+        else:
+            pred = self.model(img)
+
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
         valid_mask = ~torch.isnan(depth)
@@ -179,8 +185,12 @@ class DepthAnythingV2Module(LightningModule):
     def validation_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
 
-        # pred = self.model(img).predicted_depth
-        pred = self.model(img)
+        if self.use_huggingface:
+            # For Hugging Face models, the output is a dictionary with 'predicted_depth' key
+            pred = self.model(img).predicted_depth
+        else:
+            pred = self.model(img)
+
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 30)
 
         valid_mask = ~torch.isnan(depth)
@@ -229,8 +239,12 @@ class DepthAnythingV2Module(LightningModule):
     def test_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
 
-        pred = self.model(img)
-        # .predicted_depth
+        if self.use_huggingface:
+            # For Hugging Face models, the output is a dictionary with 'predicted_depth' key
+            pred = self.model(img).predicted_depth
+        else:
+            pred = self.model(img)
+
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
@@ -261,7 +275,11 @@ class DepthAnythingV2Module(LightningModule):
         # print(f"Processing batch {batch_idx}")
         img, depth = self._preprocess_batch(batch)
 
-        pred = self.model(img).predicted_depth
+        if self.use_huggingface:
+            # For Hugging Face models, the output is a dictionary with 'predicted_depth' key
+            pred = self.model(img).predicted_depth
+        else:
+            pred = self.model(img)
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
