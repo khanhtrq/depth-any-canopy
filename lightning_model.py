@@ -18,6 +18,8 @@ from model import DepthAnythingV2
 from torch import nn
 from torchmetrics import MetricCollection, classification, regression
 
+from safetensors.torch import load_file
+
 
 class DepthAnythingV2Module(LightningModule):
     model_configs = {
@@ -65,8 +67,19 @@ class DepthAnythingV2Module(LightningModule):
 
         if pretrained:
             if not use_huggingface:
-                pretrained_from = f"base-checkpoints/{encoder}.pth"
+                # pretrained_from = f"base-checkpoints/{encoder}.pth"
+                pretrained_from = "/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/depth_any_canopy_small.safetensors"
                 self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
+
+                state_dict = load_file(pretrained_from)
+                self.model.load_state_dict(
+                    {
+                        k: v
+                        for k, v in state_dict.items()
+                        if "pretrained" in k
+                    },
+                    strict=False,
+                )
                 # self.model.load_state_dict(
                 #     {
                 #         k: v
@@ -92,7 +105,8 @@ class DepthAnythingV2Module(LightningModule):
                 cache_dir="cache"
             )
 
-            self.model = transformers.AutoModelForDepthEstimation.from_config(config).train()
+            # self.model = transformers.AutoModelForDepthEstimation.from_config(config).train()
+            self.model = DepthAnythingV2(**{**self.model_configs[encoder]})
 
             print(config)
 
