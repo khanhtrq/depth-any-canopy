@@ -229,7 +229,8 @@ class DepthAnythingV2Module(LightningModule):
     def test_step(self, batch, batch_idx):
         img, depth = self._preprocess_batch(batch)
 
-        pred = self.model(img).predicted_depth
+        pred = self.model(img)
+        # .predicted_depth
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
 
