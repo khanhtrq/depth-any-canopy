@@ -174,12 +174,19 @@ class GediSentinelDataset(Dataset):
             mean = image.new_tensor(normalization.mean)[:, None, None]
             std = image.new_tensor(normalization.std)[:, None, None]
             image = image * std + mean
+        if mangrove_mask is None:
+            mangrove_mask = torch.isfinite(image).all(dim=0) & (image.abs() > 1e-3).any(dim=0)
+        mangrove_mask = mangrove_mask.bool()
+        display_mask = torch.nn.functional.interpolate(
+            mangrove_mask[None, None].float(), size=image.shape[-2:], mode="nearest"
+        )[0, 0].bool()
         # Convert image to [0, 1] range
         if image.shape[0] == 12:
             image = image[[2, 1, 0], :, :]
         image = image.float()
         image = image - image.min()
         image = image / image.max().clamp(min=1e-8)
+        image = image.masked_fill(~display_mask.unsqueeze(0), 1.0)
 
         mask = mask.float()
 
@@ -201,10 +208,18 @@ class GediSentinelDataset(Dataset):
             axs[1].set_title("Mask")
 
         if showing_prediction:
+            prediction_mask = torch.nn.functional.interpolate(
+                mangrove_mask[None, None].float(), size=prediction.shape[-2:], mode="nearest"
+            )[0, 0].bool()
+            displayed_prediction = np.ma.masked_where(
+                ~prediction_mask.cpu().numpy(), prediction.squeeze().cpu().numpy()
+            )
+            prediction_cmap = plt.get_cmap("Spectral_r").copy()
+            prediction_cmap.set_bad("white")
             im2 = axs[2].imshow(
-                prediction.squeeze(),
+                displayed_prediction,
                 interpolation="none",
-                cmap="Spectral_r",
+                cmap=prediction_cmap,
                 vmin=0,
                 vmax=1,
             )

@@ -246,7 +246,8 @@ class DepthAnythingV2Module(LightningModule):
         if self.current_epoch % 20 == 0 and self.logger is not None:
             for i in range(img.shape[0]):
                 fig = self.trainer.datamodule.val_dataset.plot(
-                    img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach()
+                    img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
+                mangrove_mask=batch["mangrove_mask"][i].cpu() if "mangrove_mask" in batch else None,
                 )
                 self.logger.experiment.log_figure(
                     figure=fig, figure_name=f"val_{batch_idx*img.shape[0] + i}"
@@ -319,7 +320,8 @@ class DepthAnythingV2Module(LightningModule):
 
         for i in range(img.shape[0]):
             fig = self.trainer.datamodule.val_dataset.plot(
-                img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach()
+                img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
+                mangrove_mask=batch["mangrove_mask"][i].cpu() if "mangrove_mask" in batch else None,
             )
             self.logger.experiment.log_figure(
                 figure=fig, figure_name=f"val_{batch_idx*img.shape[0] + i}"
