@@ -168,6 +168,11 @@ class DepthAnythingV2Module(LightningModule):
             pred = self.model(img)
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        if "mangrove_mask" in batch:
+            mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
+            if pred.ndim == 4:
+                mangrove_mask = mangrove_mask.unsqueeze(1)
+            pred = pred.masked_fill(~mangrove_mask, 0)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
@@ -206,6 +211,11 @@ class DepthAnythingV2Module(LightningModule):
             pred = self.model(img)
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 30)
+        if "mangrove_mask" in batch:
+            mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
+            if pred.ndim == 4:
+                mangrove_mask = mangrove_mask.unsqueeze(1)
+            pred = pred.masked_fill(~mangrove_mask, 0)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
@@ -261,6 +271,11 @@ class DepthAnythingV2Module(LightningModule):
 
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        if "mangrove_mask" in batch:
+            mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
+            if pred.ndim == 4:
+                mangrove_mask = mangrove_mask.unsqueeze(1)
+            pred = pred.masked_fill(~mangrove_mask, 0)
 
         valid_mask = ~torch.isnan(depth)
         num_valid = valid_mask.sum().item()
@@ -296,6 +311,11 @@ class DepthAnythingV2Module(LightningModule):
             pred = self.model(img)
 
         pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        if "mangrove_mask" in batch:
+            mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
+            if pred.ndim == 4:
+                mangrove_mask = mangrove_mask.unsqueeze(1)
+            pred = pred.masked_fill(~mangrove_mask, 0)
 
         for i in range(img.shape[0]):
             fig = self.trainer.datamodule.val_dataset.plot(

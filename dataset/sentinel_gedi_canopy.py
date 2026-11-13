@@ -109,6 +109,12 @@ class GediSentinelDataset(Dataset):
         print("Dataset length:", len(self.file_idx))
 
 
+    @staticmethod
+    def normalization():
+        return T.Normalize(mean=[1445.2507821473719, 1494.0496883470857, 1695.0355912679454, 1564.6835706583588, 2027.4767477712417, 3214.2947198416723, 3624.9778571404872, 3675.896774446667, 3823.0191113997635, 3810.2311611275345, 2921.714671898899, 2096.318336982956],
+                            std=[213.97085480597985, 236.57899563433898, 264.3780942144651, 334.3297911214344, 332.1163963382028, 504.0289211352316, 630.1565564561154, 696.8590235637502, 698.3457937838511, 635.1889167644749, 583.1581743442069, 504.8285260785615]
+                )
+
     def __len__(self):
         return len(self.file_idx)
 
@@ -123,6 +129,7 @@ class GediSentinelDataset(Dataset):
         
         gedi = gedi.astype(np.float32)
         sentinel = sentinel.astype(np.float32)
+        mangrove_mask = np.isfinite(sentinel).all(axis=0) & np.any(sentinel != 0, axis=0)
         sentinel = sentinel.transpose(1, 2, 0)  # from CHW to HWC for PyTorch
 
         # print(gedi.shape, sentinel.shape)
@@ -133,9 +140,7 @@ class GediSentinelDataset(Dataset):
                 # 12 bands
                 # statistics on Cuc Phuong and Ba Be
                 # ------------
-                T.Normalize(mean=[1445.2507821473719, 1494.0496883470857, 1695.0355912679454, 1564.6835706583588, 2027.4767477712417, 3214.2947198416723, 3624.9778571404872, 3675.896774446667, 3823.0191113997635, 3810.2311611275345, 2921.714671898899, 2096.318336982956],
-                            std=[213.97085480597985, 236.57899563433898, 264.3780942144651, 334.3297911214344, 332.1163963382028, 504.0289211352316, 630.1565564561154, 696.8590235637502, 698.3457937838511, 635.1889167644749, 583.1581743442069, 504.8285260785615]
-                )
+                self.normalization()
             ])
         transpose_gedi = T.Compose([
             T.ToTensor()
@@ -155,19 +160,26 @@ class GediSentinelDataset(Dataset):
             "image": sentinel,
             # sentinel[1:4, :, :],  # using RGB bands only
             "mask": gedi,
+            "mangrove_mask": torch.from_numpy(mangrove_mask),
         }
 
         return sample
 
-    def plot(self, image, mask, prediction=None, show_titles=True):
+    def plot(self, image, mask, prediction=None, show_titles=True, mangrove_mask=None):
         if prediction is not None:
             prediction = prediction.clip(0, 1).float()
+        # Restore reflectance before selecting display RGB channels.
+        if image.shape[0] == 12:
+            normalization = self.normalization()
+            mean = image.new_tensor(normalization.mean)[:, None, None]
+            std = image.new_tensor(normalization.std)[:, None, None]
+            image = image * std + mean
         # Convert image to [0, 1] range
         if image.shape[0] == 12:
-            image = image[1:4, :, :]
+            image = image[[2, 1, 0], :, :]
         image = image.float()
         image = image - image.min()
-        image = image / image.max()
+        image = image / image.max().clamp(min=1e-8)
 
         mask = mask.float()
 
