@@ -52,8 +52,8 @@ class PredictionMapTests(unittest.TestCase):
                 self.assertEqual(image.size, (6, 3))
 
     def test_region_metadata_and_row_boundaries(self):
-        for zone, rows, columns in [("zone1", 76, 52), ("zone2", 54, 52),
-                                    ("zone4", 165, 126)]:
+        for zone, rows, columns in [("zone1", 52, 76), ("zone2", 52, 54),
+                                    ("zone4", 126, 165)]:
             with self.subTest(zone=zone):
                 layout = default_layout(zone, (256, 256))
                 self.assertEqual(layout, {"rows": rows, "columns": columns})

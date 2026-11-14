@@ -125,9 +125,9 @@ Region metadata also supplies these defaults (dimensions are height x width):
 
 | Region | Source pixels | Patch grid (rows x columns, 256-pixel patches) | Merged pixels |
 |:---|:---|:---|:---|
-| zone1 | 19482 x 13359 | 76 x 52 | 19456 x 13312 |
-| zone2 | 13915 x 13360 | 54 x 52 | 13824 x 13312 |
-| zone4 | 42302 x 32283 | 165 x 126 | 42240 x 32256 |
+| zone1 | 13359 x 19482 | 52 x 76 | 13312 x 19456 |
+| zone2 | 13360 x 13915 | 52 x 54 | 13312 x 13824 |
+| zone4 | 32283 x 42302 | 126 x 165 | 32256 x 42240 |
 
 No layout settings are needed for these regions. Grids are calculated using the
 actual patch size. To override a default or supply an unknown region's layout:
