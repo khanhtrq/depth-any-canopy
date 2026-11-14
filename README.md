@@ -63,3 +63,47 @@ If you find this project useful, please consider citing:
   pages = {71–86}
 }
 ```
+
+
+## Training one model across zones
+
+Set `dataset.regions` to a list and supply a folder mapping when each zone has
+its own Kaggle input directory. Each folder value is the directory containing
+that zone's subdirectory (e.g. `GEDI_zone4/zone4/*.npy`). GEDI and Sentinel
+patch filenames must match within each zone.
+
+```bash
+python main.py model.encoder=vits model.pretrained_from=depth-anycanopy model.pretrained=true \
+  trainer.max_epochs=100 model.lr=5e-6 dataset.all_train_data=false \
+  'dataset.regions=[zone3,zone4]' dataset.ratio_train=0.8 \
+  'dataset.gedi_folder={zone3:/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/zone3/zone3/GEDI_zone3,zone4:/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/zone4/zone4/GEDI_zone4}' \
+  'dataset.sentinel_folder={zone3:/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/zone3/zone3/Sentinel_zone3_duplicated,zone4:/kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/zone4/zone4/Sentinel_zone4_duplicated}' \
+  dataset.max_height=30 trainer.devices=2 \
+  +trainer.strategy=ddp_find_unused_parameters_true model.use_huggingface=false
+```
+
+Use your actual zone paths. In a notebook, prefix `python` with `!`.
+If zones share parent directories, the existing string folder settings also work.
+The legacy `dataset.regions=zone3-zone4` spelling remains supported.
+
+Splits use seed 42 independently within each zone after excluding patches with no
+finite GEDI labels. Each zone contributes `floor(ratio_train * valid_patches)`
+training patches and the remaining patches for evaluation. This preserves the
+same ratio (up to integer rounding), not the same number of samples per zone.
+Validation and testing share the held-out partition, as in the original workflow;
+a separate untouched test set is not created. Keep `all_train_data=false` for
+disjoint training and evaluation samples.
+
+Outputs (relative to the run's working directory):
+
+- `evaluation_results/best.json` and `last.json`: per-zone and overall MAE (m),
+  MSE (m?), RMSE (m), valid pixel counts, and patch counts. Metrics weight each
+  valid GEDI pixel equally and remove duplicate patches from DDP sampler padding.
+- `inference_predictions/<zone>/image/<patch_id>.png`: comparison figures.
+- `inference_predictions/<zone>/np_array/<patch_id>.npy`: predictions normalized
+  by `dataset.max_height`; multiply by that value to convert to meters.
+
+Prediction uses the last checkpoint and includes all patches in each selected
+zone, including training patches and patches without GEDI labels, matching the
+previous prediction behavior. Evaluation uses only held-out labeled patches.
+Existing output files with the same paths are overwritten on subsequent runs.

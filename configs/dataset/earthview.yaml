@@ -9,3 +9,5 @@ max_height: 30
 gedi_folder: /kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/GEDI_filtered_CaMau
 sentinel_folder: /kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien/Sentinel_CaMau
 regions: CaMau
+# Applied independently within each zone (validation shares the test split).
+ratio_train: 0.8

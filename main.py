@@ -27,7 +27,11 @@ def main(args: DictConfig):
     data_module = GediSentinelDataModule(all_train_data = args.dataset.all_train_data,
                                          gedi_folder = args.dataset.gedi_folder,
                                          sentinel_folder = args.dataset.sentinel_folder,
-                                         regions = args.dataset.regions)
+                                         regions = args.dataset.regions,
+                                         batch_size=args.dataset.batch_size,
+                                         num_workers=args.dataset.num_workers,
+                                         ratio_train=args.dataset.ratio_train,
+                                         max_height=args.dataset.max_height)
     model = DepthAnythingV2Module(**args.model)
 
     experiment_id = time.strftime("%Y%m%d-%H%M%S")
@@ -47,6 +51,7 @@ def main(args: DictConfig):
         dirpath=f"checkpoints/{experiment_id}",
         filename="depth-any-canopy-{epoch:02d}-{val_loss:.2f}",
         save_top_k=3,
+        save_last=True,
         mode="min",
     )
 
@@ -80,13 +85,15 @@ def main(args: DictConfig):
     trainer.fit(model, datamodule=data_module)
 
     print("Testing best model")
+    model.evaluation_label = "best"
     trainer.test(model, datamodule=data_module, ckpt_path="best")
     print("Testing last model")
+    model.evaluation_label = "last"
     trainer.test(model, datamodule=data_module, ckpt_path="last")
 
     print("Prediction")
     # trainer.predict(model, datamodule=data_module, ckpt_path="best")
-    trainer.predict(model, datamodule=data_module, ckpt_path="last")
+    trainer.predict(model, datamodule=data_module, ckpt_path="last", return_predictions=False)
 
 if __name__ == "__main__":
     main()

@@ -30,84 +30,53 @@ class GediSentinelDataset(Dataset):
         all_train_data=False,
         max_height = 30,
     ):
-        self.regions = regions.split("-")
+        self.regions = regions.split("-") if isinstance(regions, str) else list(regions)
         self.gedi_folder = gedi_folder
         self.sentinel_folder = sentinel_folder
         self.mode = mode
         self.ratio_train = ratio_train
         self.predict = predict
-
         self.max_height = max_height
         self.all_train_data = all_train_data
-
-        self.sentinel_paths = []
-        self.gedi_paths = []
-
-        for r in self.regions:
-            # filtering patches with not enough GEDI points
-            gedi_paths_all = [
-                os.path.join(r, file_name)
-                for file_name in sorted(
-                    os.listdir(os.path.join(self.gedi_folder, r)),
-                    key=lambda x: int(os.path.splitext(x)[0])
-                )
-            ]
-
-            sentinel_paths_all = [
-                os.path.join(r, file_name)
-                for file_name in sorted(
-                    os.listdir(os.path.join(self.sentinel_folder, r)),
-                    key=lambda x: int(os.path.splitext(x)[0])
-                )
-            ]
-
-
-            for i in range(len(gedi_paths_all)):
-                gedi_path = os.path.join(self.gedi_folder, gedi_paths_all[i])
-                gedi = np.load(gedi_path)
-
-                sentinel_path = os.path.join(self.sentinel_folder, sentinel_paths_all[i])
-                sentinel = np.load(sentinel_path)
-
-                # Originally exclude the patches with not enough points for GSenNet
-                # if np.sum(~np.isnan(gedi)) >= 50:
-
-                # only include patches with GEDI point for training
-                if not self.predict:
-                    # print("GEDI points in patch", gedi_paths_all[i], ":", np.sum(~np.isnan(gedi)))
-                    if np.sum(~np.isnan(gedi)) > 0:
-                        # print("Include patch", gedi_paths_all[i], "Num GEDI points:", np.sum(~np.isnan(gedi)))
-                        # print("Number of Sentinel points:", np.sum(~np.isnan(sentinel)))
-                        self.gedi_paths.append(gedi_paths_all[i])
-                        self.sentinel_paths.append(sentinel_paths_all[i])
-                # include all patches for prediction
-                else:
-                    self.gedi_paths.append(gedi_paths_all[i])
-                    self.sentinel_paths.append(sentinel_paths_all[i])
-
-
-        if not self.predict:
-            #Spliting data into train and test set
-            rng = np.random.default_rng(seed=42)   # fixed seed
-            # rng = np.random.default_rng(seed=2404) 
-            file_idx_all = rng.permutation(len(self.gedi_paths)) 
-            if self.mode == "train":
-                if self.all_train_data:
-                    file_idx_train = file_idx_all
-                    self.file_idx = file_idx_train
-                else:
-                    file_idx_train = file_idx_all[:int(self.ratio_train * len(self.gedi_paths))]
-                    self.file_idx = file_idx_train
-            elif self.mode == "test" or self.mode == "val":
-                file_idx_test = file_idx_all[int(self.ratio_train * len(self.gedi_paths)):]
-                self.file_idx = file_idx_test
-        else:
-            #without permutation for prediction, to keep the order of the patches
-            file_idx_all = list(range(len(self.gedi_paths)))
-            self.file_idx = file_idx_all
-        
-        print("Dataset length:", len(self.file_idx))
-
+        if not 0 < ratio_train < 1:
+            raise ValueError("ratio_train must be between 0 and 1")
+        if len(set(self.regions)) != len(self.regions):
+            raise ValueError("regions must be unique")
+        self.gedi_paths, self.sentinel_paths = [], []
+        self.sample_regions, self.sample_ids, self.file_idx = [], [], []
+        self.split_counts = {}
+        for region in self.regions:
+            # Folder mappings allow zones stored under unrelated input roots.
+            gedi_root = gedi_folder[region] if not isinstance(gedi_folder, str) else gedi_folder
+            sentinel_root = sentinel_folder[region] if not isinstance(sentinel_folder, str) else sentinel_folder
+            gedi_dir = os.path.join(gedi_root, region)
+            sentinel_dir = os.path.join(sentinel_root, region)
+            gedi_files = {f for f in os.listdir(gedi_dir) if f.endswith(".npy")}
+            sentinel_files = {f for f in os.listdir(sentinel_dir) if f.endswith(".npy")}
+            if gedi_files != sentinel_files:
+                raise ValueError(f"Unmatched GEDI/Sentinel filenames in {region}")
+            indices = []
+            for name in sorted(gedi_files, key=lambda x: int(os.path.splitext(x)[0])):
+                gedi_path = os.path.join(gedi_dir, name)
+                if not predict and not np.isfinite(np.load(gedi_path)).any():
+                    continue
+                indices.append(len(self.gedi_paths))
+                self.gedi_paths.append(gedi_path)
+                self.sentinel_paths.append(os.path.join(sentinel_dir, name))
+                self.sample_regions.append(region)
+                self.sample_ids.append(os.path.splitext(name)[0])
+            if predict:
+                selected = indices
+            else:
+                shuffled = np.random.default_rng(seed=42).permutation(indices)
+                cut = int(ratio_train * len(indices))
+                if cut == 0 or cut == len(indices):
+                    raise ValueError(f"{region} needs enough valid patches for train and test")
+                selected = shuffled if mode == "train" and all_train_data else (
+                    shuffled[:cut] if mode == "train" else shuffled[cut:])
+            self.file_idx.extend(selected)
+            self.split_counts[region] = len(selected)
+        print(f"{mode if not predict else 'predict'} samples per zone: {self.split_counts}")
 
     @staticmethod
     def normalization():
@@ -121,8 +90,8 @@ class GediSentinelDataset(Dataset):
     def __getitem__(self, idx):
         input_file_idx = self.file_idx[idx]
 
-        gedi_path = os.path.join(self.gedi_folder, self.gedi_paths[input_file_idx])
-        sentinel_path = os.path.join(self.sentinel_folder, self.sentinel_paths[input_file_idx])
+        gedi_path = self.gedi_paths[input_file_idx]
+        sentinel_path = self.sentinel_paths[input_file_idx]
 
         gedi = np.load(gedi_path)
         sentinel = np.load(sentinel_path)
@@ -158,6 +127,8 @@ class GediSentinelDataset(Dataset):
 
         sample = {
             "image": sentinel,
+            "zone": self.sample_regions[input_file_idx],
+            "sample_id": self.sample_ids[input_file_idx],
             # sentinel[1:4, :, :],  # using RGB bands only
             "mask": gedi,
             "mangrove_mask": torch.from_numpy(mangrove_mask),
@@ -240,10 +211,12 @@ class GediSentinelDataModule(L.LightningDataModule):
         batch_size=4,
         num_workers=4,
         ratio_train=0.8,
-        all_train_data= False
+        all_train_data= False,
+        max_height=30,
     ):
         super().__init__()
 
+        self.max_height = max_height
         self.regions = regions
         self.gedi_folder = gedi_folder
         self.sentinel_folder = sentinel_folder
@@ -260,6 +233,7 @@ class GediSentinelDataModule(L.LightningDataModule):
         if stage == "fit" or stage is None:
             self.train_dataset = GediSentinelDataset(
                 regions=self.regions,
+                max_height=self.max_height,
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 mode="train",
@@ -270,6 +244,7 @@ class GediSentinelDataModule(L.LightningDataModule):
 
             self.val_dataset = GediSentinelDataset(
                 regions=self.regions,
+                max_height=self.max_height,
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 mode="val",
@@ -280,6 +255,7 @@ class GediSentinelDataModule(L.LightningDataModule):
         if stage == "test" or stage is None:
             self.test_dataset = GediSentinelDataset(
                 regions=self.regions,
+                max_height=self.max_height,
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 mode="test",
@@ -290,6 +266,7 @@ class GediSentinelDataModule(L.LightningDataModule):
         if stage == "predict":
             self.predict_dataset = GediSentinelDataset(
                 regions=self.regions,
+                max_height=self.max_height,
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 predict=True,       # include all patches

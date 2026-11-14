@@ -1,3 +1,4 @@
+import json
 import argparse
 import logging
 import os
@@ -282,24 +283,53 @@ class DepthAnythingV2Module(LightningModule):
         num_valid = valid_mask.sum().item()
         # self.print(f"Valid pixels: {num_valid}")
 
-        self.val_metric(pred[valid_mask], depth[valid_mask])
-        metrics = self.val_metric.compute()
-        self.log_dict(metrics)
-        
-        rmse = torch.sqrt(metrics.get("val_MSE", torch.tensor(0.0)))
-        self.log("val_RMSE", rmse)
+        # Keep per-patch sufficient statistics so DDP sampler padding can be
+        # removed before reporting exact per-zone, per-valid-pixel metrics.
+        for i, zone in enumerate(batch["zone"]):
+            valid = torch.isfinite(depth[i])
+            error = (pred[i][valid] - depth[i][valid]).double()
+            self.test_records[(zone, batch["sample_id"][i])] = (
+                error.numel(), error.abs().sum().item(), error.square().sum().item()
+            )
 
-        self.classification_metrics(pred > 1e-4, depth > 1e-4)
-        self.log_dict(self.classification_metrics)
+    def on_test_epoch_start(self):
+        self.test_records = {}
 
-        self.predictions.append(
-            {
-                "prediction": pred[depth > 1e-4].flatten().detach().cpu(),
-                "depth": depth[depth > 1e-4].flatten().detach().cpu(),
-            }
-        )
-
-
+    def on_test_epoch_end(self):
+        records = self.test_records
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            gathered = [None] * torch.distributed.get_world_size()
+            torch.distributed.all_gather_object(gathered, records)
+            records = {key: value for part in gathered for key, value in part.items()}
+        totals = {}
+        for (zone, _), (count, absolute, squared) in records.items():
+            total = totals.setdefault(zone, [0, 0.0, 0.0, 0])
+            total[0] += count
+            total[1] += absolute
+            total[2] += squared
+            total[3] += 1
+        overall = [sum(values[i] for values in totals.values()) for i in range(4)]
+        results = {"zones": {}, "overall": {}}
+        scale = self.trainer.datamodule.max_height
+        for zone, (count, absolute, squared, patches) in list(totals.items()) + [("overall", overall)]:
+            metrics = {"patches": patches, "valid_pixels": count,
+                       "MAE_m": absolute / count * scale if count else None,
+                       "MSE_m2": squared / count * scale ** 2 if count else None,
+                       "RMSE_m": (squared / count) ** 0.5 * scale if count else None}
+            if zone == "overall":
+                results["overall"] = metrics
+            else:
+                results["zones"][zone] = metrics
+            for name in ("MAE_m", "MSE_m2", "RMSE_m"):
+                if metrics[name] is not None:
+                    self.log(f"test/{zone}/{name}", metrics[name], sync_dist=False)
+        if self.trainer.is_global_zero:
+            os.makedirs("evaluation_results", exist_ok=True)
+            label = getattr(self, "evaluation_label", "test")
+            with open(f"evaluation_results/{label}.json", "w") as handle:
+                json.dump(results, handle, indent=2)
+            print(json.dumps(results, indent=2))
+        self.test_records.clear()
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         # print(f"Processing batch {batch_idx}")
@@ -323,28 +353,18 @@ class DepthAnythingV2Module(LightningModule):
                 img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
                 mangrove_mask=batch["mangrove_mask"][i].cpu() if "mangrove_mask" in batch else None,
             )
-            self.logger.experiment.log_figure(
-                figure=fig, figure_name=f"val_{batch_idx*img.shape[0] + i}"
-            )
-
-            # base_dir = "inference_predictions"
-            save_dir = "inference_predictions"
-
-            # counter = 1
-            # while os.path.exists(save_dir):
-            #     save_dir = f"{base_dir}_{counter}"
-            #     counter += 1
-
-            os.makedirs(f"{save_dir}/image", exist_ok=True)
-            os.makedirs(f"{save_dir}/np_array", exist_ok=True)
-            fig.savefig(
-                # f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png"
-                f"{save_dir}/image/{batch_idx * 4 + i}.png"
-            )
-            np.save(
-                f"{save_dir}/np_array/{batch_idx * 4 + i}.npy",
-                pred[i].cpu().detach().numpy()
-            )
+            zone = batch["zone"][i]
+            sample_id = batch["sample_id"][i]
+            if self.logger is not None:
+                self.logger.experiment.log_figure(
+                    figure=fig, figure_name=f"predict/{zone}/{sample_id}"
+                )
+            save_dir = os.path.join("inference_predictions", zone)
+            os.makedirs(os.path.join(save_dir, "image"), exist_ok=True)
+            os.makedirs(os.path.join(save_dir, "np_array"), exist_ok=True)
+            fig.savefig(os.path.join(save_dir, "image", f"{sample_id}.png"))
+            np.save(os.path.join(save_dir, "np_array", f"{sample_id}.npy"),
+                    pred[i].cpu().detach().numpy())
             plt.close(fig)
 
             # print("Batch ", batch_idx, "Image ", i, " saved to ", f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png")
