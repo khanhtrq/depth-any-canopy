@@ -107,6 +107,9 @@ Outputs (relative to the run's working directory):
   outside the Sentinel mangrove mask retain the patch value of zero.
 - `inference_predictions/<zone>/map.png`: merged heatmap with the patches'
   `Spectral_r` color scale and white pixels outside the mangrove mask.
+- `inference_predictions/<zone>/rgb.png`: separate full-resolution RGB mosaic
+  using Sentinel bands 2, 1, 0, per-patch min/max stretching like the patch
+  figures, and white pixels outside the mangrove mask.
 
 The preprocessing notebook numbers patches left to right, then top to bottom,
 starting at zero (`id = row * columns + column`). Reconstruction preserves
@@ -114,16 +117,29 @@ these positions even when patch IDs are missing. Only complete patches were
 exported by preprocessing, so discarded source-image edges cannot be recovered.
 The notebook's source sizes supply defaults for BaBe, HoangLien, CucPhuong
 (10980 × 10980), and CaMau (2609 × 6033). Override these for a different crop.
-For other regions such as zone3 and zone4, supply the original grid dimensions:
+Region metadata also supplies these defaults (dimensions are height x width):
+
+| Region | Source pixels | Patch grid (rows x columns, 256-pixel patches) | Merged pixels |
+|:---|:---|:---|:---|
+| zone1 | 19482 x 13359 | 76 x 52 | 19456 x 13312 |
+| zone2 | 13915 x 13360 | 54 x 52 | 13824 x 13312 |
+| zone4 | 42302 x 32283 | 165 x 126 | 42240 x 32256 |
+
+No layout settings are needed for these regions. Grids are calculated using the
+actual patch size. To override a default or supply an unknown region's layout:
 
 ```bash
-python main.py ... 'dataset.prediction_layouts={zone3:{rows:42,columns:42},zone4:{rows:42,columns:42}}'
+python main.py ... 'dataset.prediction_layouts={zone3:{rows:42,columns:42}}'
 ```
 
 Replace the example dimensions with the actual number of patch rows and columns.
 Each layout also accepts `first_id` (default 0) and `order` (default `row-major`,
-or `column-major`). Unknown regions without a layout fail before prediction
-instead of guessing the map width. Distributed prediction merges the current
+or `column-major`). Unknown regions without a layout fail before prediction.
+Automatic candidate-grid search has been removed. Previously generated candidate
+files are left on disk; new runs save `map.npy`, `map.png`, and `rgb.png` directly
+in each region's output directory.
+
+Distributed prediction merges the current
 dataset's saved patches on rank zero after every rank finishes writing; the
 output directory must be shared across ranks.
 

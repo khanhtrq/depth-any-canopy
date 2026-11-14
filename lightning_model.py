@@ -20,7 +20,7 @@ from torch import nn
 from torchmetrics import MetricCollection, classification, regression
 
 from safetensors.torch import load_file
-from prediction_map import patch_position, save_region_map
+from prediction_map import SOURCE_SHAPES, default_layout, patch_position, save_region_map
 
 
 class DepthAnythingV2Module(LightningModule):
@@ -338,14 +338,10 @@ class DepthAnythingV2Module(LightningModule):
         self.prediction_layouts = {}
         for zone in dataset.regions:
             layout = configured.get(zone)
-            source_shapes = {"BaBe": (10980, 10980), "HoangLien": (10980, 10980),
-                             "CucPhuong": (10980, 10980), "CaMau": (2609, 6033)}
-            if layout is None and zone in source_shapes:
-                # Source dimensions recorded in read_data_canopy_height.ipynb.
+            if layout is None and zone in SOURCE_SHAPES:
                 i = next(i for i in dataset.file_idx if dataset.sample_regions[i] == zone)
-                height, width = np.load(dataset.gedi_paths[i], mmap_mode="r").shape[-2:]
-                source_height, source_width = source_shapes[zone]
-                layout = {"rows": source_height // height, "columns": source_width // width}
+                shape = np.load(dataset.gedi_paths[i], mmap_mode="r").shape[-2:]
+                layout = default_layout(zone, shape)
             if layout is None:
                 raise ValueError(
                     f"Set dataset.prediction_layouts.{zone}={{rows: <rows>, columns: <columns>}} "
@@ -362,7 +358,8 @@ class DepthAnythingV2Module(LightningModule):
         if self.trainer.is_global_zero:
             dataset = self.trainer.datamodule.predict_dataset
             for zone, layout in self.prediction_layouts.items():
-                save_region_map(dataset, zone, layout, os.path.join("inference_predictions", zone))
+                output_dir = os.path.join("inference_predictions", zone)
+                save_region_map(dataset, zone, layout, output_dir)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         # print(f"Processing batch {batch_idx}")

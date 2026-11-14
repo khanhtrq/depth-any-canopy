@@ -6,8 +6,9 @@ from types import SimpleNamespace
 import matplotlib
 matplotlib.use("Agg")
 import numpy as np
+from PIL import Image
 
-from prediction_map import patch_position, save_region_map
+from prediction_map import default_layout, patch_position, save_region_map
 
 
 class PredictionMapTests(unittest.TestCase):
@@ -37,6 +38,24 @@ class PredictionMapTests(unittest.TestCase):
                                            int(sample_id) / 10)
             self.assertTrue(np.isnan(result[2:4, 3:6]).all())
             self.assertGreater(os.path.getsize(os.path.join(directory, "map.png")), 0)
+            with Image.open(os.path.join(directory, "rgb.png")) as image:
+                rgb = np.array(image)
+            self.assertEqual(rgb.shape, (4, 9, 3))
+            np.testing.assert_array_equal(rgb[2:4, 3:6], 255)
+            np.testing.assert_array_equal(rgb[0, 0], [255, 255, 255])
+            np.testing.assert_array_equal(rgb[0, 1], [255, 255, 255])
+
+    def test_region_metadata_and_row_boundaries(self):
+        for zone, rows, columns in [("zone1", 76, 52), ("zone2", 54, 52),
+                                    ("zone4", 165, 126)]:
+            with self.subTest(zone=zone):
+                layout = default_layout(zone, (256, 256))
+                self.assertEqual(layout, {"rows": rows, "columns": columns})
+                self.assertEqual(patch_position(str(columns), layout), (1, 0))
+                self.assertEqual(patch_position(str(rows * columns - 1), layout),
+                                 (rows - 1, columns - 1))
+                with self.assertRaises(ValueError):
+                    patch_position(str(rows * columns), layout)
 
     def test_layout_origin_order_and_bounds(self):
         layout = {"rows": 2, "columns": 3, "first_id": 1, "order": "column-major"}
