@@ -102,6 +102,30 @@ Outputs (relative to the run's working directory):
 - `inference_predictions/<zone>/image/<patch_id>.png`: comparison figures.
 - `inference_predictions/<zone>/np_array/<patch_id>.npy`: predictions normalized
   by `dataset.max_height`; multiply by that value to convert to meters.
+- `inference_predictions/<zone>/map.npy`: merged 2D prediction map, using the
+  same normalized units as the patches. Missing grid cells are NaN; pixels
+  outside the Sentinel mangrove mask retain the patch value of zero.
+- `inference_predictions/<zone>/map.png`: merged heatmap with the patches'
+  `Spectral_r` color scale and white pixels outside the mangrove mask.
+
+The preprocessing notebook numbers patches left to right, then top to bottom,
+starting at zero (`id = row * columns + column`). Reconstruction preserves
+these positions even when patch IDs are missing. Only complete patches were
+exported by preprocessing, so discarded source-image edges cannot be recovered.
+The notebook's source sizes supply defaults for BaBe, HoangLien, CucPhuong
+(10980 × 10980), and CaMau (2609 × 6033). Override these for a different crop.
+For other regions such as zone3 and zone4, supply the original grid dimensions:
+
+```bash
+python main.py ... 'dataset.prediction_layouts={zone3:{rows:42,columns:42},zone4:{rows:42,columns:42}}'
+```
+
+Replace the example dimensions with the actual number of patch rows and columns.
+Each layout also accepts `first_id` (default 0) and `order` (default `row-major`,
+or `column-major`). Unknown regions without a layout fail before prediction
+instead of guessing the map width. Distributed prediction merges the current
+dataset's saved patches on rank zero after every rank finishes writing; the
+output directory must be shared across ranks.
 
 Prediction uses the last checkpoint and includes all patches in each selected
 zone, including training patches and patches without GEDI labels, matching the

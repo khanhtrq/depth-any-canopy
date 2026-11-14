@@ -31,7 +31,8 @@ def main(args: DictConfig):
                                          batch_size=args.dataset.batch_size,
                                          num_workers=args.dataset.num_workers,
                                          ratio_train=args.dataset.ratio_train,
-                                         max_height=args.dataset.max_height)
+                                         max_height=args.dataset.max_height,
+                                         prediction_layouts=args.dataset.get("prediction_layouts", {}))
     model = DepthAnythingV2Module(**args.model)
 
     experiment_id = time.strftime("%Y%m%d-%H%M%S")

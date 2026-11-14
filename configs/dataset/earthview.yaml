@@ -11,3 +11,5 @@ sentinel_folder: /kaggle/input/datasets/khanhtq2101/gedi-canopy-height-hoanglien
 regions: CaMau
 # Applied independently within each zone (validation shares the test split).
 ratio_train: 0.8
+# Original patch grid per region, e.g. {zone3: {rows: 42, columns: 42}}.
+prediction_layouts: {}

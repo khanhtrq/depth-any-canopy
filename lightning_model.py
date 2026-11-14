@@ -20,6 +20,7 @@ from torch import nn
 from torchmetrics import MetricCollection, classification, regression
 
 from safetensors.torch import load_file
+from prediction_map import patch_position, save_region_map
 
 
 class DepthAnythingV2Module(LightningModule):
@@ -331,6 +332,38 @@ class DepthAnythingV2Module(LightningModule):
             print(json.dumps(results, indent=2))
         self.test_records.clear()
 
+    def on_predict_start(self):
+        dataset = self.trainer.datamodule.predict_dataset
+        configured = self.trainer.datamodule.prediction_layouts
+        self.prediction_layouts = {}
+        for zone in dataset.regions:
+            layout = configured.get(zone)
+            source_shapes = {"BaBe": (10980, 10980), "HoangLien": (10980, 10980),
+                             "CucPhuong": (10980, 10980), "CaMau": (2609, 6033)}
+            if layout is None and zone in source_shapes:
+                # Source dimensions recorded in read_data_canopy_height.ipynb.
+                i = next(i for i in dataset.file_idx if dataset.sample_regions[i] == zone)
+                height, width = np.load(dataset.gedi_paths[i], mmap_mode="r").shape[-2:]
+                source_height, source_width = source_shapes[zone]
+                layout = {"rows": source_height // height, "columns": source_width // width}
+            if layout is None:
+                raise ValueError(
+                    f"Set dataset.prediction_layouts.{zone}={{rows: <rows>, columns: <columns>}} "
+                    "to the original patch grid; numeric IDs alone do not encode its width."
+                )
+            for i in dataset.file_idx:
+                if dataset.sample_regions[i] == zone:
+                    patch_position(dataset.sample_ids[i], layout)
+            self.prediction_layouts[zone] = layout
+
+    def on_predict_epoch_end(self):
+        # All ranks must finish writing their patches before rank zero merges them.
+        self.trainer.strategy.barrier()
+        if self.trainer.is_global_zero:
+            dataset = self.trainer.datamodule.predict_dataset
+            for zone, layout in self.prediction_layouts.items():
+                save_region_map(dataset, zone, layout, os.path.join("inference_predictions", zone))
+
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         # print(f"Processing batch {batch_idx}")
         img, depth = self._preprocess_batch(batch)
@@ -349,7 +382,7 @@ class DepthAnythingV2Module(LightningModule):
             pred = pred.masked_fill(~mangrove_mask, 0)
 
         for i in range(img.shape[0]):
-            fig = self.trainer.datamodule.val_dataset.plot(
+            fig = self.trainer.datamodule.predict_dataset.plot(
                 img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
                 mangrove_mask=batch["mangrove_mask"][i].cpu() if "mangrove_mask" in batch else None,
             )

@@ -213,10 +213,12 @@ class GediSentinelDataModule(L.LightningDataModule):
         ratio_train=0.8,
         all_train_data= False,
         max_height=30,
+        prediction_layouts=None,
     ):
         super().__init__()
 
         self.max_height = max_height
+        self.prediction_layouts = prediction_layouts or {}
         self.regions = regions
         self.gedi_folder = gedi_folder
         self.sentinel_folder = sentinel_folder
