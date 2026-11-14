@@ -107,9 +107,13 @@ Outputs (relative to the run's working directory):
   outside the Sentinel mangrove mask retain the patch value of zero.
 - `inference_predictions/<zone>/map.png`: merged heatmap with the patches'
   `Spectral_r` color scale and white pixels outside the mangrove mask.
-- `inference_predictions/<zone>/rgb.png`: separate full-resolution RGB mosaic
+- `inference_predictions/<zone>/rgb.png`: separate RGB mosaic visualization
   using Sentinel bands 2, 1, 0, per-patch min/max stretching like the patch
   figures, and white pixels outside the mangrove mask.
+
+RGB and heatmap visualizations use previews with a maximum side length of 4096
+pixels to keep rendering large regions within RAM limits. `map.npy` retains
+every predicted pixel at the original patch resolution.
 
 The preprocessing notebook numbers patches left to right, then top to bottom,
 starting at zero (`id = row * columns + column`). Reconstruction preserves
@@ -139,9 +143,35 @@ Automatic candidate-grid search has been removed. Previously generated candidate
 files are left on disk; new runs save `map.npy`, `map.png`, and `rgb.png` directly
 in each region's output directory.
 
-Distributed prediction merges the current
-dataset's saved patches on rank zero after every rank finishes writing; the
-output directory must be shared across ranks.
+If the metadata's dimension order is uncertain, rebuild an explicit alternative
+from already saved predictions without retraining or running inference again:
+
+```bash
+python prediction_map.py --zone zone1 --rows 52 --columns 76 \
+  --sentinel-dir /path/to/Sentinel_duplicated/zone1
+```
+
+This saves `map.npy`, `map.png`, `rgb.png`, and `layout.json` in the separate
+`inference_predictions/zone1/remerge_52x76_row-major/` folder. Original predictions
+and maps are preserved. Use `--patch-dir` for predictions saved elsewhere and
+`--order column-major` to check column-first patch numbering. Swapping grid
+dimensions changes where patches are placed; it does not rotate the individual
+patches. Inspect the original raster's `height` and `width` when available before
+changing the default layout. Sparse white areas can also reflect masked pixels
+or missing patches, so the screenshot alone cannot establish the correct grid.
+
+For single-node multi-GPU DDP runs, `python main.py` automatically starts one
+set of workers using `torch.distributed.run` (torchrun). The same workers execute
+training, both evaluations, and prediction without relaunching the script between
+stages. Keep `trainer.devices=2` and
+`+trainer.strategy=ddp_find_unused_parameters_true` to use both Kaggle GPUs.
+The driver waits for all workers to exit successfully, then merges their saved
+patches on the CPU. This keeps map rendering out of distributed teardown.
+Comet console capture is disabled, while metric and figure logging stay enabled.
+Worker exceptions are recorded by TorchElastic with full Hydra tracebacks.
+
+Single-GPU runs and directly launched `torchrun` jobs merge on rank zero after
+the patches are saved. The output directory must be shared across ranks.
 
 Prediction uses the last checkpoint and includes all patches in each selected
 zone, including training patches and patches without GEDI labels, matching the

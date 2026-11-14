@@ -1,4 +1,6 @@
 import time
+import os
+import sys
 
 import comet_ml
 import hydra
@@ -13,11 +15,19 @@ from lightning.pytorch.callbacks import (
 )
 from lightning.pytorch.loggers import CometLogger
 from lightning_model import DepthAnythingV2Module
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
+from torch.distributed.elastic.multiprocessing.errors import record
+from distributed_runtime import launch_workers
+from prediction_map import merge_region_predictions
 
 
 @hydra.main(config_path="configs", config_name="default", version_base=None)
+@record
 def main(args: DictConfig):
+    driver = launch_workers(
+        OmegaConf.to_container(args.trainer, resolve=True), torch.cuda.device_count(),
+        __file__, sys.argv[1:],
+    )
     pl.seed_everything(42)
     torch.set_float32_matmul_precision("medium")
     
@@ -33,9 +43,16 @@ def main(args: DictConfig):
                                          ratio_train=args.dataset.ratio_train,
                                          max_height=args.dataset.max_height,
                                          prediction_layouts=args.dataset.get("prediction_layouts", {}))
+    if driver:
+        # All GPU processes have exited; large CPU maps cannot block DDP teardown.
+        data_module.setup("predict")
+        merge_region_predictions(data_module.predict_dataset, data_module.prediction_layouts)
+        print("Prediction completed", flush=True)
+        return
     model = DepthAnythingV2Module(**args.model)
+    model.defer_map_merge = os.environ.get("CANOPY_DEFER_MAP_MERGE") == "1"
 
-    experiment_id = time.strftime("%Y%m%d-%H%M%S")
+    experiment_id = os.environ.get("CANOPY_RUN_ID", time.strftime("%Y%m%d-%H%M%S"))
     logger = False
     if args.logger:
         logger = CometLogger(
@@ -44,8 +61,8 @@ def main(args: DictConfig):
             experiment_name="",
             save_dir="comet-logs",
             offline=False,
+            auto_output_logging=False,
         )
-        experiment_id = logger.experiment.id
 
     checkpoint_callback = ModelCheckpoint(
         monitor="val_Loss(MSE)",
@@ -81,20 +98,23 @@ def main(args: DictConfig):
         enable_model_summary=False
     )
 
-    print("Fitting to trainer")
+    print("Fitting to trainer", flush=True)
 
     trainer.fit(model, datamodule=data_module)
 
-    print("Testing best model")
+    print("Testing best model", flush=True)
     model.evaluation_label = "best"
     trainer.test(model, datamodule=data_module, ckpt_path="best")
-    print("Testing last model")
+    print("Testing last model", flush=True)
     model.evaluation_label = "last"
     trainer.test(model, datamodule=data_module, ckpt_path="last")
 
-    print("Prediction")
+    print(f"Prediction: output directory = {os.path.abspath('inference_predictions')}", flush=True)
     # trainer.predict(model, datamodule=data_module, ckpt_path="best")
     trainer.predict(model, datamodule=data_module, ckpt_path="last", return_predictions=False)
+    if trainer.is_global_zero:
+        message = "Prediction patches completed; driver will merge maps" if model.defer_map_merge else "Prediction completed"
+        print(message, flush=True)
 
 if __name__ == "__main__":
     main()

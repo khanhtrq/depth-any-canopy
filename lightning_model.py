@@ -20,7 +20,7 @@ from torch import nn
 from torchmetrics import MetricCollection, classification, regression
 
 from safetensors.torch import load_file
-from prediction_map import SOURCE_SHAPES, default_layout, patch_position, save_region_map
+from prediction_map import resolve_prediction_layouts, merge_region_predictions
 
 
 class DepthAnythingV2Module(LightningModule):
@@ -335,31 +335,23 @@ class DepthAnythingV2Module(LightningModule):
     def on_predict_start(self):
         dataset = self.trainer.datamodule.predict_dataset
         configured = self.trainer.datamodule.prediction_layouts
-        self.prediction_layouts = {}
-        for zone in dataset.regions:
-            layout = configured.get(zone)
-            if layout is None and zone in SOURCE_SHAPES:
-                i = next(i for i in dataset.file_idx if dataset.sample_regions[i] == zone)
-                shape = np.load(dataset.gedi_paths[i], mmap_mode="r").shape[-2:]
-                layout = default_layout(zone, shape)
-            if layout is None:
-                raise ValueError(
-                    f"Set dataset.prediction_layouts.{zone}={{rows: <rows>, columns: <columns>}} "
-                    "to the original patch grid; numeric IDs alone do not encode its width."
-                )
-            for i in dataset.file_idx:
-                if dataset.sample_regions[i] == zone:
-                    patch_position(dataset.sample_ids[i], layout)
-            self.prediction_layouts[zone] = layout
+        self.prediction_layouts = resolve_prediction_layouts(dataset, configured)
+        if self.trainer.is_global_zero:
+            for zone, layout in self.prediction_layouts.items():
+                output_dir = os.path.abspath(os.path.join("inference_predictions", zone))
+                os.makedirs(os.path.join(output_dir, "image"), exist_ok=True)
+                os.makedirs(os.path.join(output_dir, "np_array"), exist_ok=True)
+                print(f"Prediction {zone}: {layout['rows']} x {layout['columns']} grid; "
+                      f"saving to {output_dir}", flush=True)
 
     def on_predict_epoch_end(self):
         # All ranks must finish writing their patches before rank zero merges them.
         self.trainer.strategy.barrier()
+        if getattr(self, "defer_map_merge", False):
+            return
         if self.trainer.is_global_zero:
-            dataset = self.trainer.datamodule.predict_dataset
-            for zone, layout in self.prediction_layouts.items():
-                output_dir = os.path.join("inference_predictions", zone)
-                save_region_map(dataset, zone, layout, output_dir)
+            merge_region_predictions(self.trainer.datamodule.predict_dataset, self.prediction_layouts)
+        self.trainer.strategy.barrier()
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         # print(f"Processing batch {batch_idx}")
@@ -385,16 +377,16 @@ class DepthAnythingV2Module(LightningModule):
             )
             zone = batch["zone"][i]
             sample_id = batch["sample_id"][i]
-            if self.logger is not None:
-                self.logger.experiment.log_figure(
-                    figure=fig, figure_name=f"predict/{zone}/{sample_id}"
-                )
             save_dir = os.path.join("inference_predictions", zone)
             os.makedirs(os.path.join(save_dir, "image"), exist_ok=True)
             os.makedirs(os.path.join(save_dir, "np_array"), exist_ok=True)
             fig.savefig(os.path.join(save_dir, "image", f"{sample_id}.png"))
             np.save(os.path.join(save_dir, "np_array", f"{sample_id}.npy"),
                     pred[i].cpu().detach().numpy())
+            if self.logger is not None:
+                self.logger.experiment.log_figure(
+                    figure=fig, figure_name=f"predict/{zone}/{sample_id}"
+                )
             plt.close(fig)
 
             # print("Batch ", batch_idx, "Image ", i, " saved to ", f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png")

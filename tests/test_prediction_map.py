@@ -8,7 +8,7 @@ matplotlib.use("Agg")
 import numpy as np
 from PIL import Image
 
-from prediction_map import default_layout, patch_position, save_region_map
+from prediction_map import default_layout, patch_position, save_region_map, main as remerge
 
 
 class PredictionMapTests(unittest.TestCase):
@@ -44,6 +44,12 @@ class PredictionMapTests(unittest.TestCase):
             np.testing.assert_array_equal(rgb[2:4, 3:6], 255)
             np.testing.assert_array_equal(rgb[0, 0], [255, 255, 255])
             np.testing.assert_array_equal(rgb[0, 1], [255, 255, 255])
+            # A bounded preview must not reduce the resolution of map.npy.
+            save_region_map(dataset, "test", {"rows": 2, "columns": 3}, directory,
+                            max_preview_size=6)
+            np.testing.assert_equal(np.load(os.path.join(directory, "map.npy")), result)
+            with Image.open(os.path.join(directory, "rgb.png")) as image:
+                self.assertEqual(image.size, (6, 3))
 
     def test_region_metadata_and_row_boundaries(self):
         for zone, rows, columns in [("zone1", 76, 52), ("zone2", 54, 52),
@@ -65,6 +71,33 @@ class PredictionMapTests(unittest.TestCase):
                 patch_position(sample_id, layout)
         with self.assertRaises(ValueError):
             patch_position("0", {"rows": 2, "columns": 0})
+
+    def test_remerge_changes_layout_without_changing_source_predictions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            patch_dir = os.path.join(directory, "patches")
+            sentinel_dir = os.path.join(directory, "sentinel")
+            os.makedirs(patch_dir)
+            os.makedirs(sentinel_dir)
+            for i in range(6):
+                np.save(os.path.join(patch_dir, f"{i}.npy"),
+                        np.full((2, 2), i / 10, dtype=np.float32))
+                np.save(os.path.join(sentinel_dir, f"{i}.npy"),
+                        np.ones((12, 2, 2), dtype=np.float32))
+            for rows, columns, order in [(2, 3, "row-major"), (3, 2, "row-major"),
+                                         (2, 3, "column-major")]:
+                output_dir = os.path.join(directory, f"{rows}x{columns}_{order}")
+                remerge(["--zone", "test", "--patch-dir", patch_dir,
+                         "--sentinel-dir", sentinel_dir, "--output-dir", output_dir,
+                         "--rows", str(rows), "--columns", str(columns), "--order", order])
+                result = np.load(os.path.join(output_dir, "map.npy"))
+                layout = {"rows": rows, "columns": columns, "order": order}
+                self.assertEqual(result.shape, (rows * 2, columns * 2))
+                for i in range(6):
+                    row, column = patch_position(str(i), layout)
+                    self.assertAlmostEqual(float(result[row * 2, column * 2]), i / 10)
+                for name in ("map.png", "rgb.png", "layout.json"):
+                    self.assertTrue(os.path.isfile(os.path.join(output_dir, name)))
+            np.testing.assert_allclose(np.load(os.path.join(patch_dir, "3.npy")), 0.3)
 
 
 if __name__ == "__main__":
