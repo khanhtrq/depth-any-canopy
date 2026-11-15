@@ -12,4 +12,9 @@ regions: CaMau
 # Applied independently within each zone (validation shares the test split).
 ratio_train: 0.8
 # Original patch grid per region, e.g. {zone3: {rows: 42, columns: 42}}.
-prediction_layouts: {}
+# Can Gio 2022 export: 256-pixel patches, zero-based row-major IDs.
+prediction_layouts:
+  can_gio:
+    rows: 14
+    columns: 11
+    order: row-major
