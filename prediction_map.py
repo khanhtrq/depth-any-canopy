@@ -80,6 +80,18 @@ def save_region_map(dataset, zone, layout, output_dir, max_preview_size=4096, pa
     patch_dir = patch_dir or os.path.join(output_dir, "np_array")
     first = np.load(os.path.join(patch_dir, f"{dataset.sample_ids[entries[0]]}.npy"))
     height, width = first.shape[-2:]
+    # One shared RGB stretch for the region, excluding masked/background pixels.
+    rgb_min, rgb_max = float("inf"), float("-inf")
+    for i in entries:
+        sentinel = np.load(dataset.sentinel_paths[i])
+        valid = np.isfinite(sentinel).all(axis=0) & np.any(sentinel != 0, axis=0)
+        if valid.any():
+            values = sentinel[[2, 1, 0]][:, valid]
+            rgb_min = min(rgb_min, float(values.min()))
+            rgb_max = max(rgb_max, float(values.max()))
+    if not np.isfinite(rgb_min):
+        rgb_min = rgb_max = 0.0
+    rgb_range = max(rgb_max - rgb_min, 1e-8)
     map_path = os.path.join(output_dir, "map.npy")
     mosaic = np.lib.format.open_memmap(
         map_path, mode="w+", dtype=np.float32,
@@ -117,12 +129,12 @@ def save_region_map(dataset, zone, layout, output_dir, max_preview_size=4096, pa
         sample = np.ix_(y, x)
         preview[top:bottom, left:right] = np.where(
             visible[sample], patch.reshape(height, width)[sample], np.nan)
-        # Same RGB bands and per-patch min/max stretch as dataset.plot(),
-        # applied directly to the original, unnormalized reflectance.
+        # Shared region-wide min/max applied to original RGB reflectance.
         rgb = np.array(sentinel[[2, 1, 0]], dtype=np.float32)
         rgb = np.nan_to_num(rgb, nan=0, posinf=0, neginf=0)
-        rgb -= rgb.min()
-        rgb /= max(float(rgb.max()), 1e-8)
+        rgb -= rgb_min
+        rgb /= rgb_range
+        np.clip(rgb, 0, 1, out=rgb)
         rgb[:, ~visible] = 1
         rgb_patch = Image.fromarray((rgb.transpose(1, 2, 0)[sample] * 255).astype(np.uint8))
         rgb_image.paste(rgb_patch, (left, top))

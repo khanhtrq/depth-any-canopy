@@ -108,8 +108,8 @@ Outputs (relative to the run's working directory):
 - `inference_predictions/<zone>/map.png`: merged heatmap with the patches'
   `Spectral_r` color scale and white pixels outside the mangrove mask.
 - `inference_predictions/<zone>/rgb.png`: separate RGB mosaic visualization
-  using Sentinel bands 2, 1, 0, per-patch min/max stretching like the patch
-  figures, and white pixels outside the mangrove mask.
+  using Sentinel bands 2, 1, 0 and one shared min/max range across all valid
+  RGB pixels in the region. Pixels outside the mangrove mask are white.
 
 RGB and heatmap visualizations use previews with a maximum side length of 4096
 pixels to keep rendering large regions within RAM limits. `map.npy` retains

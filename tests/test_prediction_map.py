@@ -43,13 +43,39 @@ class PredictionMapTests(unittest.TestCase):
             self.assertEqual(rgb.shape, (4, 9, 3))
             np.testing.assert_array_equal(rgb[2:4, 3:6], 255)
             np.testing.assert_array_equal(rgb[0, 0], [255, 255, 255])
-            np.testing.assert_array_equal(rgb[0, 1], [255, 255, 255])
+            np.testing.assert_array_equal(rgb[0, 1], [0, 0, 0])
             # A bounded preview must not reduce the resolution of map.npy.
             save_region_map(dataset, "test", {"rows": 2, "columns": 3}, directory,
                             max_preview_size=6)
             np.testing.assert_equal(np.load(os.path.join(directory, "map.npy")), result)
             with Image.open(os.path.join(directory, "rgb.png")) as image:
                 self.assertEqual(image.size, (6, 3))
+
+    def test_rgb_uses_shared_region_range_excluding_masked_pixels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            os.makedirs(os.path.join(directory, "np_array"))
+            paths = []
+            for i in range(2):
+                np.save(os.path.join(directory, "np_array", f"{i}.npy"), np.ones((2, 2)))
+                sentinel = np.full((12, 2, 2), 10, dtype=np.float32)
+                sentinel[2] = 20 + i * 10
+                sentinel[1] = 10 + i * 10
+                sentinel[:, 0, 0] = 0
+                if i == 0:
+                    sentinel[2, 0, 0] = 1000000
+                    sentinel[11, 0, 0] = np.nan
+                path = os.path.join(directory, f"sentinel{i}.npy")
+                np.save(path, sentinel)
+                paths.append(path)
+            dataset = SimpleNamespace(file_idx=[0, 1], sample_regions=["test", "test"],
+                                      sample_ids=["0", "1"], sentinel_paths=paths, max_height=30)
+            save_region_map(dataset, "test", {"rows": 1, "columns": 2}, directory)
+            with Image.open(os.path.join(directory, "rgb.png")) as image:
+                rgb = np.array(image)
+            np.testing.assert_array_equal(rgb[1, 1], [127, 0, 0])
+            np.testing.assert_array_equal(rgb[1, 3], [255, 127, 0])
+            np.testing.assert_array_equal(rgb[0, 0], [255, 255, 255])
+            np.testing.assert_array_equal(rgb[0, 2], [255, 255, 255])
 
     def test_region_metadata_and_row_boundaries(self):
         for zone, rows, columns in [("zone1", 52, 76), ("zone2", 52, 54),
