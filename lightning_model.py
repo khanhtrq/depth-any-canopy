@@ -231,7 +231,9 @@ class DepthAnythingV2Module(LightningModule):
         self.val_metric(pred[valid_mask], depth[valid_mask])
         
         # Log loss with on_step=True to show per-batch updates
-        self.log("val_Loss(MSE)", loss, prog_bar=True, on_step=True, on_epoch=True)
+        # Checkpoint selection must see the same loss on every DDP rank.
+        self.log("val_Loss(MSE)", loss, prog_bar=True, on_step=True, on_epoch=True,
+                 sync_dist=True, batch_size=img.shape[0])
         
         # Log metrics
         metrics = self.val_metric.compute()

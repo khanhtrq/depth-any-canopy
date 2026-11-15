@@ -6,6 +6,21 @@ import sys
 import uuid
 
 
+def evaluation_checkpoint_paths(trainer, checkpoint_callback, checkpoint_path=None):
+    """Use rank zero's saved paths instead of potentially stale worker state."""
+    if checkpoint_path:
+        # Before fit/test, the strategy process group may not be initialized yet.
+        return checkpoint_path, checkpoint_path
+    paths = None
+    if trainer.is_global_zero:
+        paths = (checkpoint_callback.best_model_path, checkpoint_callback.last_model_path)
+    best, last = trainer.strategy.broadcast(paths, src=0)
+    if not best or not last:
+        raise RuntimeError("Evaluation requires saved best and last checkpoints.")
+    trainer.strategy.barrier()
+    return best, last
+
+
 def worker_count(trainer_config, available_gpus):
     if int(trainer_config.get("num_nodes", 1)) != 1:
         return 1  # Multi-node runs should be launched by the cluster scheduler.

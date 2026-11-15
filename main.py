@@ -17,7 +17,7 @@ from lightning.pytorch.loggers import CometLogger
 from lightning_model import DepthAnythingV2Module
 from omegaconf import DictConfig, OmegaConf
 from torch.distributed.elastic.multiprocessing.errors import record
-from distributed_runtime import launch_workers
+from distributed_runtime import launch_workers, evaluation_checkpoint_paths
 from prediction_map import merge_region_predictions
 
 
@@ -98,20 +98,26 @@ def main(args: DictConfig):
         enable_model_summary=False
     )
 
-    print("Fitting to trainer", flush=True)
+    checkpoint_path = args.get("checkpoint_path")
+    if checkpoint_path:
+        print(f"Skipping training; evaluating and predicting from {checkpoint_path}", flush=True)
+    else:
+        print("Fitting to trainer", flush=True)
+        trainer.fit(model, datamodule=data_module)
 
-    trainer.fit(model, datamodule=data_module)
+    best_path, last_path = evaluation_checkpoint_paths(
+        trainer, checkpoint_callback, checkpoint_path
+    )
 
     print("Testing best model", flush=True)
     model.evaluation_label = "best"
-    trainer.test(model, datamodule=data_module, ckpt_path="best")
+    trainer.test(model, datamodule=data_module, ckpt_path=best_path)
     print("Testing last model", flush=True)
     model.evaluation_label = "last"
-    trainer.test(model, datamodule=data_module, ckpt_path="last")
+    trainer.test(model, datamodule=data_module, ckpt_path=last_path)
 
     print(f"Prediction: output directory = {os.path.abspath('inference_predictions')}", flush=True)
-    # trainer.predict(model, datamodule=data_module, ckpt_path="best")
-    trainer.predict(model, datamodule=data_module, ckpt_path="last", return_predictions=False)
+    trainer.predict(model, datamodule=data_module, ckpt_path=last_path, return_predictions=False)
     if trainer.is_global_zero:
         message = "Prediction patches completed; driver will merge maps" if model.defer_map_merge else "Prediction completed"
         print(message, flush=True)

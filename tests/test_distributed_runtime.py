@@ -2,12 +2,36 @@ import os
 import subprocess
 import sys
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import patch, Mock
 
-from distributed_runtime import launch_workers, worker_count
+from distributed_runtime import launch_workers, worker_count, evaluation_checkpoint_paths
 
 
 class DistributedRuntimeTests(unittest.TestCase):
+    def test_checkpoint_paths_override_stale_worker_state(self):
+        callback = SimpleNamespace(best_model_path="deleted-epoch53.ckpt", last_model_path="last.ckpt")
+        trainer = SimpleNamespace(is_global_zero=False, strategy=Mock())
+        trainer.strategy.broadcast.return_value = ("epoch67.ckpt", "last.ckpt")
+        self.assertEqual(evaluation_checkpoint_paths(trainer, callback),
+                         ("epoch67.ckpt", "last.ckpt"))
+        trainer.strategy.broadcast.assert_called_once_with(None, src=0)
+        trainer.strategy.barrier.assert_called_once_with()
+
+    def test_rank_zero_publishes_saved_checkpoint_paths(self):
+        callback = SimpleNamespace(best_model_path="best.ckpt", last_model_path="last.ckpt")
+        trainer = SimpleNamespace(is_global_zero=True, strategy=Mock())
+        trainer.strategy.broadcast.side_effect = lambda paths, src: paths
+        self.assertEqual(evaluation_checkpoint_paths(trainer, callback), ("best.ckpt", "last.ckpt"))
+        trainer.strategy.broadcast.assert_called_once_with(("best.ckpt", "last.ckpt"), src=0)
+        callback.best_model_path = ""
+        with self.assertRaises(RuntimeError):
+            evaluation_checkpoint_paths(trainer, callback)
+
+    def test_recovery_does_not_require_initialized_strategy(self):
+        self.assertEqual(evaluation_checkpoint_paths(None, None, "/saved/last.ckpt"),
+                         ("/saved/last.ckpt", "/saved/last.ckpt"))
+
     def test_device_selection(self):
         for devices, expected in [(1, 1), (2, 2), ("auto", 2), (-1, 2),
                                   ([0, 1], 2), ("0,1", 2)]:
