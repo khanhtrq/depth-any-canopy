@@ -29,6 +29,7 @@ class GediSentinelDataset(Dataset):
         predict=False,
         all_train_data=False,
         max_height = 30,
+        region_subdirs=None,
     ):
         self.regions = regions.split("-") if isinstance(regions, str) else list(regions)
         self.gedi_folder = gedi_folder
@@ -38,6 +39,7 @@ class GediSentinelDataset(Dataset):
         self.predict = predict
         self.max_height = max_height
         self.all_train_data = all_train_data
+        self.region_subdirs = region_subdirs or {}
         if not 0 < ratio_train < 1:
             raise ValueError("ratio_train must be between 0 and 1")
         if len(set(self.regions)) != len(self.regions):
@@ -49,8 +51,9 @@ class GediSentinelDataset(Dataset):
             # Folder mappings allow zones stored under unrelated input roots.
             gedi_root = gedi_folder[region] if not isinstance(gedi_folder, str) else gedi_folder
             sentinel_root = sentinel_folder[region] if not isinstance(sentinel_folder, str) else sentinel_folder
-            gedi_dir = os.path.join(gedi_root, region)
-            sentinel_dir = os.path.join(sentinel_root, region)
+            subdir = self.region_subdirs.get(region, region)
+            gedi_dir = os.path.join(gedi_root, subdir)
+            sentinel_dir = os.path.join(sentinel_root, subdir)
             gedi_files = {f for f in os.listdir(gedi_dir) if f.endswith(".npy")}
             sentinel_files = {f for f in os.listdir(sentinel_dir) if f.endswith(".npy")}
             if gedi_files != sentinel_files:
@@ -214,11 +217,13 @@ class GediSentinelDataModule(L.LightningDataModule):
         all_train_data= False,
         max_height=30,
         prediction_layouts=None,
+        region_subdirs=None,
     ):
         super().__init__()
 
         self.max_height = max_height
         self.prediction_layouts = prediction_layouts or {}
+        self.region_subdirs = region_subdirs or {}
         self.regions = regions
         self.gedi_folder = gedi_folder
         self.sentinel_folder = sentinel_folder
@@ -239,6 +244,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 mode="train",
+                region_subdirs=self.region_subdirs,
                 ratio_train=self.ratio_train,
                 predict=False,
                 all_train_data = self.all_train_data
@@ -250,6 +256,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 mode="val",
+                region_subdirs=self.region_subdirs,
                 ratio_train=self.ratio_train,
                 predict=False,
             )
@@ -261,6 +268,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 mode="test",
+                region_subdirs=self.region_subdirs,
                 ratio_train=self.ratio_train,
                 predict=False,
             )
@@ -272,6 +280,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 gedi_folder=self.gedi_folder,
                 sentinel_folder=self.sentinel_folder,
                 predict=True,       # include all patches
+                region_subdirs=self.region_subdirs,
             )
 
     def train_dataloader(self):
