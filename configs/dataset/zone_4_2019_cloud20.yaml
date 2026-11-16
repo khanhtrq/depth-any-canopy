@@ -1,0 +1,19 @@
+# Sentinel-2 2019 annual median, scene cloud <20%; GEDI April-December 2019.
+# Export metadata: data/zone_4_2019_cloud20/manifest.json and metadata/zone_4/.
+defaults:
+  - earthview
+
+gedi_folder: data/zone_4_2019_cloud20/GEDI
+sentinel_folder: data/zone_4_2019_cloud20/Sentinel
+regions: [zone_4]
+all_train_data: false
+ratio_train: 0.8
+# Preserve the existing 30 m target scaling/clipping used by the pretrained model.
+max_height: 30
+prediction_layouts:
+  # EPSG:32648, 10 m; padded 256-pixel tiles, zero-based row-major IDs.
+  zone_4:
+    rows: 126
+    columns: 190
+    first_id: 0
+    order: row-major
