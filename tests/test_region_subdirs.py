@@ -17,6 +17,18 @@ def load_class(name, namespace):
 
 
 class RegionSubdirTests(unittest.TestCase):
+    def test_halo_reaches_all_stages(self):
+        factory = Mock()
+        module_class = load_class('GediSentinelDataModule', {
+            'L': SimpleNamespace(LightningDataModule=object), 'GediSentinelDataset': factory,
+        })
+        module = module_class(['z'], 'GEDI', 'Sentinel', input_halo=32)
+        module.setup('fit')
+        module.setup('test')
+        module.setup('predict')
+        self.assertEqual(factory.call_count, 4)
+        self.assertTrue(all(call.kwargs['input_halo'] == 32 for call in factory.call_args_list))
+
     def test_paths_and_region_identity(self):
         dataset_class = load_class("GediSentinelDataset", {"Dataset": object, "os": os})
         for mapping in (None, {}, {"named_run": "disk_region"}, {"other": "unused"}):

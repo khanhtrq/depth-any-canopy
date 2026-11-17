@@ -21,6 +21,7 @@ from torchmetrics import MetricCollection, classification, regression
 
 from safetensors.torch import load_file
 from prediction_map import resolve_prediction_layouts, merge_region_predictions
+from halo import prediction_core, crop_core
 
 
 class DepthAnythingV2Module(LightningModule):
@@ -169,7 +170,7 @@ class DepthAnythingV2Module(LightningModule):
         else:
             pred = self.model(img)
 
-        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        pred = self._prediction_core(pred, batch).clamp(0, 1)
         if "mangrove_mask" in batch:
             mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
             if pred.ndim == 4:
@@ -212,7 +213,7 @@ class DepthAnythingV2Module(LightningModule):
         else:
             pred = self.model(img)
 
-        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 30)
+        pred = self._prediction_core(pred, batch).clamp(0, 30)
         if "mangrove_mask" in batch:
             mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
             if pred.ndim == 4:
@@ -250,7 +251,7 @@ class DepthAnythingV2Module(LightningModule):
         if self.current_epoch % 20 == 0 and self.logger is not None:
             for i in range(img.shape[0]):
                 fig = self.trainer.datamodule.val_dataset.plot(
-                    img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
+                    self._plot_input(img, batch, i).cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
                 mangrove_mask=batch["mangrove_mask"][i].cpu() if "mangrove_mask" in batch else None,
                 )
                 self.logger.experiment.log_figure(
@@ -275,7 +276,7 @@ class DepthAnythingV2Module(LightningModule):
             pred = self.model(img)
 
 
-        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        pred = self._prediction_core(pred, batch).clamp(0, 1)
         if "mangrove_mask" in batch:
             mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
             if pred.ndim == 4:
@@ -365,7 +366,7 @@ class DepthAnythingV2Module(LightningModule):
         else:
             pred = self.model(img)
 
-        pred = resize(pred, depth.shape[-2:], interpolation="bilinear").clamp(0, 1)
+        pred = self._prediction_core(pred, batch).clamp(0, 1)
         if "mangrove_mask" in batch:
             mangrove_mask = batch["mangrove_mask"].to(device=pred.device, dtype=torch.bool)
             if pred.ndim == 4:
@@ -374,7 +375,7 @@ class DepthAnythingV2Module(LightningModule):
 
         for i in range(img.shape[0]):
             fig = self.trainer.datamodule.predict_dataset.plot(
-                img[i].cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
+                self._plot_input(img, batch, i).cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
                 mangrove_mask=batch["mangrove_mask"][i].cpu() if "mangrove_mask" in batch else None,
             )
             zone = batch["zone"][i]
@@ -394,6 +395,18 @@ class DepthAnythingV2Module(LightningModule):
             # print("Batch ", batch_idx, "Image ", i, " saved to ", f"{save_dir}/image/{batch_idx * img.shape[0] + i}.png")
 
         return pred
+
+    def _prediction_core(self, prediction, batch):
+        return prediction_core(prediction, batch['image'].shape[-2:],
+                               batch['mask'].shape[-2:], resize)
+
+    def _plot_input(self, network_input, batch, index):
+        original = batch['image'][index]
+        target_shape = batch['mask'].shape[-2:]
+        if original.shape[-2:] == target_shape:
+            return network_input[index]
+        halo = (original.shape[-1]-target_shape[-1])//2
+        return crop_core(original, target_shape, halo)
 
     def _preprocess_batch(self, batch):
         img, depth = batch["image"], batch["mask"]

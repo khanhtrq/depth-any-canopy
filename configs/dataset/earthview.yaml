@@ -13,6 +13,8 @@ regions: CaMau
 region_subdirs: {}
 # Applied independently within each zone (validation shares the test split).
 ratio_train: 0.8
+# Original data: 0. Halo experiment: 32 (320px Sentinel / 256px GEDI).
+input_halo: 0
 # Original patch grid per region, e.g. {zone3: {rows: 42, columns: 42}}.
 # Can Gio 2022 export: 256-pixel patches, zero-based row-major IDs.
 prediction_layouts:

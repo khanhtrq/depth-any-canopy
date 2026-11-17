@@ -4,6 +4,7 @@ import lightning as L
 import pandas as pd
 import numpy as np
 import os
+import json
 
 import matplotlib.pyplot as plt
 
@@ -30,6 +31,7 @@ class GediSentinelDataset(Dataset):
         all_train_data=False,
         max_height = 30,
         region_subdirs=None,
+        input_halo=0,
     ):
         self.regions = regions.split("-") if isinstance(regions, str) else list(regions)
         self.gedi_folder = gedi_folder
@@ -40,6 +42,9 @@ class GediSentinelDataset(Dataset):
         self.max_height = max_height
         self.all_train_data = all_train_data
         self.region_subdirs = region_subdirs or {}
+        if not isinstance(input_halo, int) or isinstance(input_halo, bool) or input_halo < 0:
+            raise ValueError('input_halo must be a non-negative integer')
+        self.input_halo = input_halo
         if not 0 < ratio_train < 1:
             raise ValueError("ratio_train must be between 0 and 1")
         if len(set(self.regions)) != len(self.regions):
@@ -54,6 +59,23 @@ class GediSentinelDataset(Dataset):
             subdir = self.region_subdirs.get(region, region)
             gedi_dir = os.path.join(gedi_root, subdir)
             sentinel_dir = os.path.join(sentinel_root, subdir)
+            layout_file = os.path.join(os.path.dirname(gedi_root), 'layout.json')
+            overlap = {}
+            if os.path.isfile(layout_file):
+                with open(layout_file) as handle:
+                    overlap = json.load(handle)
+                if 'input_halo' in overlap and overlap['input_halo'] != input_halo:
+                    raise ValueError(f'{region}: configured input_halo does not match layout.json')
+                if input_halo and overlap.get('stride', overlap.get('patch_size', 256)) != overlap.get('patch_size', 256):
+                    raise ValueError('Halo inputs require non-overlapping target tiles; stride must equal patch_size')
+                manifest_file = os.path.join(os.path.dirname(gedi_root), 'manifest.json')
+                if os.path.isfile(manifest_file):
+                    with open(manifest_file) as handle:
+                        export_manifest = json.load(handle)
+                        if export_manifest.get('status') != 'complete':
+                            raise ValueError(f'{region}: export is incomplete')
+                        if export_manifest.get('storage') == 'zip':
+                            raise ValueError(f'{region}: extract the delivered ZIP into data/ before training or prediction')
             gedi_files = {f for f in os.listdir(gedi_dir) if f.endswith(".npy")}
             sentinel_files = {f for f in os.listdir(sentinel_dir) if f.endswith(".npy")}
             if gedi_files != sentinel_files:
@@ -71,6 +93,22 @@ class GediSentinelDataset(Dataset):
             if predict:
                 selected = indices
             else:
+                if not input_halo and overlap.get('stride', overlap.get('patch_size', 256)) < overlap.get('patch_size', 256):
+                    if all_train_data:
+                        raise ValueError('all_train_data would contaminate overlap validation; use a separate inference run')
+                    # Spatial bands with a 60 m guard strip prevent shared
+                    # pixels and nearby repeated GEDI footprints across splits.
+                    from overlap_layout import spatial_patch_split
+                    selected = []
+                    for index in indices:
+                        keep = spatial_patch_split(overlap, self.sample_ids[index], ratio_train) == ('train' if mode == 'train' else 'test')
+                        if keep:
+                            selected.append(index)
+                    if not selected:
+                        raise ValueError(f'{region}: spatial {mode} split is empty; adjust ratio_train')
+                    self.file_idx.extend(selected)
+                    self.split_counts[region] = len(selected)
+                    continue
                 shuffled = np.random.default_rng(seed=42).permutation(indices)
                 cut = int(ratio_train * len(indices))
                 if cut == 0 or cut == len(indices):
@@ -101,7 +139,9 @@ class GediSentinelDataset(Dataset):
         
         gedi = gedi.astype(np.float32)
         sentinel = sentinel.astype(np.float32)
-        mangrove_mask = np.isfinite(sentinel).all(axis=0) & np.any(sentinel != 0, axis=0)
+        from halo import crop_core
+        sentinel_core = crop_core(sentinel, gedi.shape[-2:], self.input_halo)
+        mangrove_mask = np.isfinite(sentinel_core).all(axis=0) & np.any(sentinel_core != 0, axis=0)
         sentinel = sentinel.transpose(1, 2, 0)  # from CHW to HWC for PyTorch
 
         # print(gedi.shape, sentinel.shape)
@@ -218,12 +258,14 @@ class GediSentinelDataModule(L.LightningDataModule):
         max_height=30,
         prediction_layouts=None,
         region_subdirs=None,
+        input_halo=0,
     ):
         super().__init__()
 
         self.max_height = max_height
         self.prediction_layouts = prediction_layouts or {}
         self.region_subdirs = region_subdirs or {}
+        self.input_halo = input_halo
         self.regions = regions
         self.gedi_folder = gedi_folder
         self.sentinel_folder = sentinel_folder
@@ -245,6 +287,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 sentinel_folder=self.sentinel_folder,
                 mode="train",
                 region_subdirs=self.region_subdirs,
+                input_halo=self.input_halo,
                 ratio_train=self.ratio_train,
                 predict=False,
                 all_train_data = self.all_train_data
@@ -257,6 +300,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 sentinel_folder=self.sentinel_folder,
                 mode="val",
                 region_subdirs=self.region_subdirs,
+                input_halo=self.input_halo,
                 ratio_train=self.ratio_train,
                 predict=False,
             )
@@ -269,6 +313,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 sentinel_folder=self.sentinel_folder,
                 mode="test",
                 region_subdirs=self.region_subdirs,
+                input_halo=self.input_halo,
                 ratio_train=self.ratio_train,
                 predict=False,
             )
@@ -281,6 +326,7 @@ class GediSentinelDataModule(L.LightningDataModule):
                 sentinel_folder=self.sentinel_folder,
                 predict=True,       # include all patches
                 region_subdirs=self.region_subdirs,
+                input_halo=self.input_halo,
             )
 
     def train_dataloader(self):

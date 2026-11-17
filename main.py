@@ -43,7 +43,8 @@ def main(args: DictConfig):
                                          ratio_train=args.dataset.ratio_train,
                                          max_height=args.dataset.max_height,
                                          prediction_layouts=args.dataset.get("prediction_layouts", {}),
-                                         region_subdirs=args.dataset.get("region_subdirs", {}))
+                                         region_subdirs=args.dataset.get("region_subdirs", {}),
+                                         input_halo=args.dataset.get("input_halo", 0))
     if driver:
         # All GPU processes have exited; large CPU maps cannot block DDP teardown.
         data_module.setup("predict")

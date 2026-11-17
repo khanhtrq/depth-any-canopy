@@ -1,3 +1,8 @@
+The current zone 1/2/4 experiment uses a 32-pixel Sentinel halo around
+non-overlapping 256-pixel targets. See [HALO_EXPERIMENT.md](HALO_EXPERIMENT.md)
+for the code configuration and future data contract. Original experiments remain
+available with `input_halo=0`. Halo data collection is deferred.
+
 <div align="center">
   
 ## Depth Any Canopy: Leveraging Depth Foundation Models for Canopy Height Estimation

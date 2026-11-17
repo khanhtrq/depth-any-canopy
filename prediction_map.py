@@ -1,6 +1,8 @@
-"""Reconstruct region maps from numbered, non-overlapping prediction patches."""
+"""Reconstruct region maps from core tiles or historical overlapping patches."""
 
 import os
+import json
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,9 +31,15 @@ def resolve_prediction_layouts(dataset, configured):
     layouts = {}
     for zone in dataset.regions:
         layout = configured.get(zone)
+        if isinstance(layout, (str, os.PathLike)):
+            layout = json.loads(Path(layout).read_text(encoding='utf-8'))
         entries = [i for i in dataset.file_idx if dataset.sample_regions[i] == zone]
         if not entries:
             raise ValueError(f"No prediction patches found for {zone}")
+        if layout is None:
+            path = Path(dataset.gedi_paths[entries[0]]).parents[2] / 'layout.json'
+            if path.exists():
+                layout = json.loads(path.read_text(encoding='utf-8'))
         if layout is None and zone in SOURCE_SHAPES:
             shape = np.load(dataset.gedi_paths[entries[0]], mmap_mode="r").shape[-2:]
             layout = default_layout(zone, shape)
@@ -40,6 +48,14 @@ def resolve_prediction_layouts(dataset, configured):
                 f"Set dataset.prediction_layouts.{zone}={{rows: <rows>, columns: <columns>}} "
                 "to the original patch grid; numeric IDs alone do not encode its width."
             )
+        halo = getattr(dataset, 'input_halo', 0)
+        if halo:
+            shape = np.load(dataset.gedi_paths[entries[0]]).shape[-2:]
+            if shape[0] != shape[1] or int(layout.get('stride', shape[0])) != shape[0]:
+                raise ValueError('Halo predictions require a non-overlapping target grid')
+            if layout.get('input_halo', halo) != halo:
+                raise ValueError('Prediction layout input_halo differs from the dataset')
+            layout = dict(layout, stride=shape[0], input_halo=halo, merge='core-stitch')
         for i in entries:
             patch_position(dataset.sample_ids[i], layout)
         layouts[zone] = layout
@@ -73,6 +89,11 @@ def patch_position(sample_id, layout):
 
 def save_region_map(dataset, zone, layout, output_dir, max_preview_size=4096, patch_dir=None):
     """Save a full-resolution array and bounded RGB/heatmap visualizations."""
+    if 'stride' in layout or layout.get('input_halo', 0):
+        from overlap_prediction import save_overlap_map
+        if 'stride' not in layout:
+            layout = dict(layout, stride=int(layout['patch_size']))
+        return save_overlap_map(dataset, zone, layout, output_dir, max_preview_size, patch_dir)
     entries = [i for i in dataset.file_idx if dataset.sample_regions[i] == zone]
     if not entries:
         return
@@ -171,8 +192,9 @@ def main(argv=None):
                         help="Directory containing this zone's original Sentinel .npy patches")
     parser.add_argument("--patch-dir", help="Defaults to inference_predictions/<zone>/np_array")
     parser.add_argument("--output-dir", help="Defaults to a separate remerge_<rows>x<columns>_<order> folder")
-    parser.add_argument("--rows", type=int, required=True)
-    parser.add_argument("--columns", type=int, required=True)
+    parser.add_argument("--rows", type=int)
+    parser.add_argument("--columns", type=int)
+    parser.add_argument("--layout", help="Downloaded layout.json (includes overlap, CRS and extent)")
     parser.add_argument("--order", choices=["row-major", "column-major"], default="row-major")
     parser.add_argument("--first-id", type=int, default=0)
     parser.add_argument("--max-height", type=float, default=30)
@@ -185,6 +207,10 @@ def main(argv=None):
         raise ValueError(f"No saved prediction patches in {patch_dir}")
     layout = {"rows": args.rows, "columns": args.columns,
               "order": args.order, "first_id": args.first_id}
+    if args.layout:
+        layout = json.loads(Path(args.layout).read_text(encoding='utf-8'))
+    elif args.rows is None or args.columns is None:
+        parser.error('Supply --layout or both --rows and --columns')
     sentinel_paths = []
     for path in files:
         patch_position(path.stem, layout)
@@ -193,7 +219,9 @@ def main(argv=None):
             raise FileNotFoundError(f"Missing Sentinel patch: {sentinel}")
         sentinel_paths.append(str(sentinel))
     output_dir = Path(args.output_dir) if args.output_dir else (
-        root / f"remerge_{args.rows}x{args.columns}_{args.order}")
+        root / (f"remerge_halo{layout['input_halo']}_core" if layout.get('input_halo', 0)
+                else f"remerge_overlap_{layout['stride']}" if args.layout and 'stride' in layout
+                else f"remerge_{layout['rows']}x{layout['columns']}_{layout.get('order', 'row-major')}"))
     output_dir.mkdir(parents=True, exist_ok=True)
     dataset = SimpleNamespace(file_idx=list(range(len(files))),
                               sample_regions=[args.zone] * len(files),
@@ -205,7 +233,7 @@ def main(argv=None):
         json.dump({"zone": args.zone, "layout": layout, "patch_count": len(files),
                    "patch_dir": str(patch_dir.resolve()),
                    "sentinel_dir": str(Path(args.sentinel_dir).resolve())}, handle, indent=2)
-    print(f"Rebuilt {args.zone} with {args.rows} rows x {args.columns} columns ({args.order}): "
+    print(f"Rebuilt {args.zone} with {layout['rows']} rows x {layout['columns']} columns ({layout.get('order', 'row-major')}): "
           f"{output_dir.resolve()}", flush=True)
 
 

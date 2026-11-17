@@ -1,0 +1,22 @@
+# Code configuration only: these halo datasets have not been downloaded yet.
+defaults:
+  - earthview
+
+input_halo: 32
+gedi_folder:
+  zone_1: data/zone_1_2019_cloud20_halo32/GEDI
+  zone_2: data/zone_2_2019_cloud20_halo32/GEDI
+  zone_4: data/zone_4_2019_cloud20_halo32/GEDI
+sentinel_folder:
+  zone_1: data/zone_1_2019_cloud20_halo32/Sentinel
+  zone_2: data/zone_2_2019_cloud20_halo32/Sentinel
+  zone_4: data/zone_4_2019_cloud20_halo32/Sentinel
+regions: [zone_1, zone_2, zone_4]
+region_subdirs: {}
+all_train_data: false
+ratio_train: 0.8
+max_height: 30
+prediction_layouts:
+  zone_1: data/zone_1_2019_cloud20_halo32/layout.json
+  zone_2: data/zone_2_2019_cloud20_halo32/layout.json
+  zone_4: data/zone_4_2019_cloud20_halo32/layout.json
