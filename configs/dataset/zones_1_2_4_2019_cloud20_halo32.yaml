@@ -1,4 +1,4 @@
-# Code configuration only: these halo datasets have not been downloaded yet.
+# Prepare with prepare_halo_data.py; use only exports marked complete.
 defaults:
   - earthview
 
@@ -12,11 +12,96 @@ sentinel_folder:
   zone_2: data/zone_2_2019_cloud20_halo32/Sentinel
   zone_4: data/zone_4_2019_cloud20_halo32/Sentinel
 regions: [zone_1, zone_2, zone_4]
-region_subdirs: {}
+region_subdirs:
+  zone_1_2019_cloud20_halo32: zone_1
+  zone_2_2019_cloud20_halo32: zone_2
+  zone_4_2019_cloud20_halo32: zone_4
 all_train_data: false
 ratio_train: 0.8
 max_height: 30
+# Embedded export metadata; no external layout.json files are required.
 prediction_layouts:
-  zone_1: data/zone_1_2019_cloud20_halo32/layout.json
-  zone_2: data/zone_2_2019_cloud20_halo32/layout.json
-  zone_4: data/zone_4_2019_cloud20_halo32/layout.json
+  zone_1:
+    rows: 45
+    columns: 66
+    height: 11317
+    width: 16788
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 655270, 0, -10, 2391760]
+  zone_1_2019_cloud20_halo32:
+    rows: 45
+    columns: 66
+    height: 11317
+    width: 16788
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 655270, 0, -10, 2391760]
+  zone_2:
+    rows: 49
+    columns: 58
+    height: 12301
+    width: 14720
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 572790, 0, -10, 2312510]
+  zone_2_2019_cloud20_halo32:
+    rows: 49
+    columns: 58
+    height: 12301
+    width: 14720
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 572790, 0, -10, 2312510]
+  zone_4:
+    rows: 126
+    columns: 190
+    height: 32209
+    width: 48466
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 323790, 0, -10, 1239550]
+  zone_4_2019_cloud20_halo32:
+    rows: 126
+    columns: 190
+    height: 32209
+    width: 48466
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 323790, 0, -10, 1239550]

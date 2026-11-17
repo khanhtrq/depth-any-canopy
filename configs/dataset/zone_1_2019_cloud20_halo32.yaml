@@ -1,0 +1,29 @@
+# Metadata from data/zone_1_2019_cloud20_halo32/layout.json.
+# Embedded for Kaggle uploads containing only GEDI and Sentinel arrays.
+defaults:
+  - earthview
+
+gedi_folder: data/zone_1_2019_cloud20_halo32/GEDI
+sentinel_folder: data/zone_1_2019_cloud20_halo32/Sentinel
+regions: [zone_1_2019_cloud20_halo32]
+region_subdirs:
+  zone_1_2019_cloud20_halo32: zone_1
+input_halo: 32
+all_train_data: false
+ratio_train: 0.8
+max_height: 30
+prediction_layouts:
+  zone_1_2019_cloud20_halo32:
+    rows: 45
+    columns: 66
+    height: 11317
+    width: 16788
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 655270, 0, -10, 2391760]
