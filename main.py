@@ -43,7 +43,7 @@ def main(args: DictConfig):
                                          num_workers=args.dataset.num_workers,
                                          ratio_train=args.dataset.ratio_train,
                                          max_height=args.dataset.max_height,
-                                         prediction_layouts=args.dataset.get("prediction_layouts", {}),
+                                         prediction_layouts=OmegaConf.to_container(args.dataset.get("prediction_layouts", OmegaConf.create({})), resolve=True),
                                          region_subdirs=args.dataset.get("region_subdirs", {}),
                                          input_halo=args.dataset.get("input_halo", 0))
     if driver:
