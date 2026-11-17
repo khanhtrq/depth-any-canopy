@@ -19,6 +19,7 @@ from omegaconf import DictConfig, OmegaConf
 from torch.distributed.elastic.multiprocessing.errors import record
 from distributed_runtime import launch_workers, evaluation_checkpoint_paths
 from prediction_map import merge_region_predictions
+from training_curves import TrainingCurves
 
 
 @hydra.main(config_path="configs", config_name="default", version_base=None)
@@ -84,7 +85,7 @@ def main(args: DictConfig):
 
     # callback = [checkpoint_callback, early_stopping, progress_bar]
     # No early stopping 
-    callback = [checkpoint_callback, progress_bar]
+    callback = [checkpoint_callback, progress_bar, TrainingCurves(f"training_curves/{experiment_id}")]
     if logger:
         callback.append(lr_monitor)
 
