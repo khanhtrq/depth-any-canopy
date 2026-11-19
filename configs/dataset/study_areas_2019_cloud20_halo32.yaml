@@ -1,0 +1,89 @@
+defaults:
+  - earthview
+
+input_halo: 32
+regions: [dong_rui, hai_ha_mong_cai, can_gio, ca_mau, red_river_reserve]
+gedi_folder:
+  dong_rui: data/dong_rui_2019_cloud20_halo32/GEDI
+  hai_ha_mong_cai: data/hai_ha_mong_cai_2019_cloud20_halo32/GEDI
+  can_gio: data/can_gio_2019_cloud20_halo32/GEDI
+  ca_mau: data/ca_mau_2019_cloud20_halo32/GEDI
+  red_river_reserve: data/red_river_reserve_2019_cloud20_halo32/GEDI
+sentinel_folder:
+  dong_rui: data/dong_rui_2019_cloud20_halo32/Sentinel
+  hai_ha_mong_cai: data/hai_ha_mong_cai_2019_cloud20_halo32/Sentinel
+  can_gio: data/can_gio_2019_cloud20_halo32/Sentinel
+  ca_mau: data/ca_mau_2019_cloud20_halo32/Sentinel
+  red_river_reserve: data/red_river_reserve_2019_cloud20_halo32/Sentinel
+# Embedded export layouts for datasets containing only GEDI and Sentinel arrays.
+prediction_layouts:
+  dong_rui:
+    rows: 17
+    columns: 14
+    height: 4112
+    width: 3347
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 729560, 0, -10, 2385160]
+  hai_ha_mong_cai:
+    rows: 12
+    columns: 16
+    height: 3024
+    width: 3858
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 774460, 0, -10, 2386050]
+  can_gio:
+    rows: 14
+    columns: 11
+    height: 3336
+    width: 2758
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 693240, 0, -10, 1179850]
+  ca_mau:
+    rows: 43
+    columns: 31
+    height: 10875
+    width: 7704
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 468820, 0, -10, 1055690]
+  red_river_reserve:
+    rows: 47
+    columns: 34
+    height: 11883
+    width: 8618
+    patch_size: 256
+    stride: 256
+    input_halo: 32
+    input_shape: [320, 320]
+    first_id: 0
+    order: "row-major"
+    merge: "core-stitch"
+    crs: "EPSG:32648"
+    transform: [10, 0, 605620, 0, -10, 2330630]
