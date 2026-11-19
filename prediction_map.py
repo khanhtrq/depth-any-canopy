@@ -63,11 +63,17 @@ def resolve_prediction_layouts(dataset, configured):
 
 
 def merge_region_predictions(dataset, configured):
+    from carbon_stock import save_region_carbon, write_region_statistics
+
+    statistics = []
     for zone, layout in resolve_prediction_layouts(dataset, configured).items():
         output_dir = os.path.abspath(os.path.join("inference_predictions", zone))
         print(f"Merging prediction map for {zone}", flush=True)
-        save_region_map(dataset, zone, layout, output_dir)
-        print(f"Saved {zone}: map.npy, map.png, rgb.png in {output_dir}", flush=True)
+        save_region_map(dataset, zone, layout, output_dir, mask_mosaic=True)
+        statistics.extend(save_region_carbon(dataset, zone, layout, output_dir))
+        print(f"Saved {zone}: canopy height, AGB and carbon maps in {output_dir}", flush=True)
+    if statistics:
+        write_region_statistics(Path("inference_predictions") / "region_statistics.csv", statistics)
 
 
 def patch_position(sample_id, layout):
@@ -87,7 +93,8 @@ def patch_position(sample_id, layout):
     raise ValueError("Prediction layout order must be row-major or column-major")
 
 
-def save_region_map(dataset, zone, layout, output_dir, max_preview_size=4096, patch_dir=None):
+def save_region_map(dataset, zone, layout, output_dir, max_preview_size=4096, patch_dir=None,
+                    mask_mosaic=False):
     """Save a full-resolution array and bounded RGB/heatmap visualizations."""
     if 'stride' in layout or layout.get('input_halo', 0):
         from overlap_prediction import save_overlap_map
@@ -134,11 +141,12 @@ def save_region_map(dataset, zone, layout, output_dir, max_preview_size=4096, pa
             raise ValueError(f"Inconsistent prediction patch shape for {zone}/{sample_id}")
         window = np.s_[row * height:(row + 1) * height,
                        column * width:(column + 1) * width]
-        mosaic[window] = patch.reshape(height, width)
         sentinel = np.load(dataset.sentinel_paths[i])
         if sentinel.shape[-2:] != (height, width):
             raise ValueError(f"Sentinel/prediction size mismatch for {zone}/{sample_id}")
         visible = np.isfinite(sentinel).all(axis=0) & np.any(sentinel != 0, axis=0)
+        patch = patch.reshape(height, width)
+        mosaic[window] = np.where(visible, patch, np.nan) if mask_mosaic else patch
         top = row * height * preview_height // mosaic.shape[0]
         bottom = (row + 1) * height * preview_height // mosaic.shape[0]
         left = column * width * preview_width // mosaic.shape[1]

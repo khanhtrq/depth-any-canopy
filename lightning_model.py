@@ -21,6 +21,7 @@ from torchmetrics import MetricCollection, classification, regression
 
 from safetensors.torch import load_file
 from prediction_map import resolve_prediction_layouts, merge_region_predictions
+from carbon_stock import save_patch_carbon
 from halo import prediction_core, crop_core
 
 
@@ -373,8 +374,9 @@ class DepthAnythingV2Module(LightningModule):
                 mangrove_mask = mangrove_mask.unsqueeze(1)
             pred = pred.masked_fill(~mangrove_mask, 0)
 
+        dataset = self.trainer.datamodule.predict_dataset
         for i in range(img.shape[0]):
-            fig = self.trainer.datamodule.predict_dataset.plot(
+            fig = dataset.plot(
                 self._plot_input(img, batch, i).cpu().detach(), depth[i].cpu().detach(), pred[i].cpu().detach(),
                 mangrove_mask=batch["mangrove_mask"][i].cpu() if "mangrove_mask" in batch else None,
             )
@@ -386,6 +388,11 @@ class DepthAnythingV2Module(LightningModule):
             fig.savefig(os.path.join(save_dir, "image", f"{sample_id}.png"))
             np.save(os.path.join(save_dir, "np_array", f"{sample_id}.npy"),
                     pred[i].cpu().detach().numpy())
+            save_patch_carbon(
+                save_dir, sample_id, pred[i].detach().cpu().numpy(),
+                batch["mask"][i].cpu().numpy() * dataset.max_height,
+                batch["mangrove_mask"][i].cpu().numpy(), dataset.max_height,
+            )
             if self.logger is not None:
                 self.logger.experiment.log_figure(
                     figure=fig, figure_name=f"predict/{zone}/{sample_id}"
