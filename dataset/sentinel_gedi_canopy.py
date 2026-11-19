@@ -196,7 +196,8 @@ class GediSentinelDataset(Dataset):
         )[0, 0].bool()
         # Convert image to [0, 1] range
         if image.shape[0] == 12:
-            image = image[[2, 1, 0], :, :]
+            # Sentinel-2 true color: B4 (red), B3 (green), B2 (blue).
+            image = image[[3, 2, 1], :, :]
         image = image.float()
         image = image - image.min()
         image = image / image.max().clamp(min=1e-8)
